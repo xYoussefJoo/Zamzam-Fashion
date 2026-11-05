@@ -1,0 +1,65 @@
+# Zamzam Fashion
+
+Bilingual (Arabic / English) online store for ready-made clothes and made-to-measure tailoring.
+Guest checkout with cash on delivery, an instant price calculator for custom orders, and an owner dashboard.
+
+## Stack
+
+| Part | Tech |
+|---|---|
+| Backend | ASP.NET Core 10 Web API (Controllers) · Clean Architecture · EF Core · PostgreSQL 17 |
+| Frontend | Next.js (App Router) · TypeScript · Tailwind CSS |
+| Auth | ASP.NET Identity httpOnly cookie (owner only; customers check out as guests) |
+
+## Repository layout
+
+```
+Zamzam Fashion/
+├─ backend/                  .NET solution (Zamzam.slnx)
+│  ├─ src/
+│  │  ├─ Zamzam.Domain/          entities, enums, business rules (no dependencies)
+│  │  ├─ Zamzam.Application/     use cases, validation, interfaces
+│  │  ├─ Zamzam.Infrastructure/  EF Core, Identity, image storage
+│  │  └─ Zamzam.Api/             controllers, Program.cs
+│  └─ tests/Zamzam.Tests/
+├─ frontend/                 Next.js app (storefront + /admin)
+├─ docs/                     API plan, API contract, production plan
+├─ docker-compose.yml        local PostgreSQL
+└─ .github/workflows/ci.yml  build + test on every push
+```
+
+Dependency rule: `Api → Infrastructure → Application → Domain`. Domain references nothing.
+
+## Getting started
+
+Requirements: .NET SDK 10, Node.js 24, Docker Desktop.
+
+```bash
+# 1. Database
+cp .env.example .env            # set DB_PASSWORD
+docker compose up -d
+
+# 2. Backend  → http://localhost:5055  (health: /health, OpenAPI: /openapi/v1.json)
+cd backend
+dotnet run --project src/Zamzam.Api
+
+# 3. Frontend → http://localhost:3000
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+The frontend forwards `/api/*` to the backend (see `frontend/next.config.ts`), so the browser only ever talks to one origin.
+
+## Docs
+
+- `docs/Zamzam-API-Plan.docx` — the 47 endpoints, one line each
+- `docs/API-CONTRACT.md` — full request/response contract
+- `docs/Zamzam-Fashion-Production-Plan.pdf` — audit of the old prototype and the 7-day plan
+
+## Workflow
+
+- `main` is protected; work on feature branches and open a pull request.
+- CI must be green before merging.
+- Never commit secrets: use `.env` (root), `frontend/.env.local`, and `dotnet user-secrets` for the API.

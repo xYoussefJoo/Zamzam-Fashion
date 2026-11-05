@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Zamzam.Api/Zamzam.Api.csproj" />
+    <Project Path="src/Zamzam.Application/Zamzam.Application.csproj" />
+    <Project Path="src/Zamzam.Domain/Zamzam.Domain.csproj" />
+    <Project Path="src/Zamzam.Infrastructure/Zamzam.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Zamzam.Tests/Zamzam.Tests.csproj" />
+  </Folder>
+</Solution>
