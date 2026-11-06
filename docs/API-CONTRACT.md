@@ -581,6 +581,10 @@ Submits a tailoring request with an optional reference photo.
     "hips": 98,
     "inseam": 76
   },
+  "lining": false,
+  "extras": [
+    "embroidery"
+  ],
   "notes": "Side pockets",
   "acceptTerms": true
 }
@@ -602,6 +606,7 @@ Submits a tailoring request with an optional reference photo.
 - Measurement keys must belong to the chosen garment's groups; values are 1–300 cm.
 - In StandardSize mode, standardSize is required and measurements must be empty.
 - Email is optional; when given, the customer gets the tracking link and price updates by email.
+- lining and extras use the same keys as POST /api/tailoring/estimate; the server recalculates the estimate and stores it.
 - The photo's real file type is checked, it is re-encoded to WebP with EXIF removed, and it is stored in a private bucket.
 
 **Errors**

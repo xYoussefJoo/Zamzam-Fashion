@@ -1,4 +1,5 @@
 using Serilog;
+using Zamzam.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +7,7 @@ builder.Host.UseSerilog((context, config) => config
     .ReadFrom.Configuration(context.Configuration)
     .WriteTo.Console());
 
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
