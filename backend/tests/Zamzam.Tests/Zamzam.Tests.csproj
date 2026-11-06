@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Zamzam.Domain\Zamzam.Domain.csproj" />
     <ProjectReference Include="..\..\src\Zamzam.Application\Zamzam.Application.csproj" />
+    <ProjectReference Include="..\..\src\Zamzam.Infrastructure\Zamzam.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
