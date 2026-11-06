@@ -12,12 +12,17 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "zamzam");
+
             migrationBuilder.CreateSequence(
                 name: "OrderNumbers",
+                schema: "zamzam",
                 startValue: 10001L);
 
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
@@ -32,6 +37,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AspNetUsers",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
@@ -59,6 +65,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Categories",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -79,6 +86,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_Categories_Categories_ParentId",
                         column: x => x.ParentId,
+                        principalSchema: "zamzam",
                         principalTable: "Categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -86,6 +94,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Colors",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -103,6 +112,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "DataProtectionKeys",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -117,6 +127,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "DeliveryZones",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -138,6 +149,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "IdempotencyKeys",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Key = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
@@ -154,6 +166,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "PriceRules",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -169,6 +182,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "SiteSettings",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -184,6 +198,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "TailoringCatalog",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -199,6 +214,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -213,6 +229,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
                         column: x => x.RoleId,
+                        principalSchema: "zamzam",
                         principalTable: "AspNetRoles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -220,6 +237,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AspNetUserClaims",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -234,6 +252,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_AspNetUserClaims_AspNetUsers_UserId",
                         column: x => x.UserId,
+                        principalSchema: "zamzam",
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -241,6 +260,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AspNetUserLogins",
+                schema: "zamzam",
                 columns: table => new
                 {
                     LoginProvider = table.Column<string>(type: "text", nullable: false),
@@ -254,6 +274,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_AspNetUserLogins_AspNetUsers_UserId",
                         column: x => x.UserId,
+                        principalSchema: "zamzam",
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -261,6 +282,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AspNetUserRoles",
+                schema: "zamzam",
                 columns: table => new
                 {
                     UserId = table.Column<string>(type: "text", nullable: false),
@@ -272,12 +294,14 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_AspNetUserRoles_AspNetRoles_RoleId",
                         column: x => x.RoleId,
+                        principalSchema: "zamzam",
                         principalTable: "AspNetRoles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_AspNetUserRoles_AspNetUsers_UserId",
                         column: x => x.UserId,
+                        principalSchema: "zamzam",
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -285,6 +309,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AspNetUserTokens",
+                schema: "zamzam",
                 columns: table => new
                 {
                     UserId = table.Column<string>(type: "text", nullable: false),
@@ -298,6 +323,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_AspNetUserTokens_AspNetUsers_UserId",
                         column: x => x.UserId,
+                        principalSchema: "zamzam",
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -305,6 +331,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Products",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -327,6 +354,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_Products_Categories_CategoryId",
                         column: x => x.CategoryId,
+                        principalSchema: "zamzam",
                         principalTable: "Categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -334,6 +362,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Orders",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -363,6 +392,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_Orders_DeliveryZones_DeliveryZoneId",
                         column: x => x.DeliveryZoneId,
+                        principalSchema: "zamzam",
                         principalTable: "DeliveryZones",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -370,12 +400,13 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "ProductImages",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ProductId = table.Column<int>(type: "integer", nullable: false),
-                    Url = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    StorageKey = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
                     AltAr = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     AltEn = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     SortOrder = table.Column<int>(type: "integer", nullable: false),
@@ -388,6 +419,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_ProductImages_Products_ProductId",
                         column: x => x.ProductId,
+                        principalSchema: "zamzam",
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -395,6 +427,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "ProductVariants",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -416,12 +449,14 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_ProductVariants_Colors_ColorId",
                         column: x => x.ColorId,
+                        principalSchema: "zamzam",
                         principalTable: "Colors",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ProductVariants_Products_ProductId",
                         column: x => x.ProductId,
+                        principalSchema: "zamzam",
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -429,6 +464,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "OrderStatusHistory",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -448,12 +484,14 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_OrderStatusHistory_AspNetUsers_ChangedByUserId",
                         column: x => x.ChangedByUserId,
+                        principalSchema: "zamzam",
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_OrderStatusHistory_Orders_OrderId",
                         column: x => x.OrderId,
+                        principalSchema: "zamzam",
                         principalTable: "Orders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -461,6 +499,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "TailoringSpecs",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -491,6 +530,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_TailoringSpecs_Orders_OrderId",
                         column: x => x.OrderId,
+                        principalSchema: "zamzam",
                         principalTable: "Orders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -498,6 +538,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "OrderLines",
+                schema: "zamzam",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -522,12 +563,14 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_OrderLines_Orders_OrderId",
                         column: x => x.OrderId,
+                        principalSchema: "zamzam",
                         principalTable: "Orders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_OrderLines_ProductVariants_VariantId",
                         column: x => x.VariantId,
+                        principalSchema: "zamzam",
                         principalTable: "ProductVariants",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -535,127 +578,151 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
+                schema: "zamzam",
                 table: "AspNetRoleClaims",
                 column: "RoleId");
 
             migrationBuilder.CreateIndex(
                 name: "RoleNameIndex",
+                schema: "zamzam",
                 table: "AspNetRoles",
                 column: "NormalizedName",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserClaims_UserId",
+                schema: "zamzam",
                 table: "AspNetUserClaims",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserLogins_UserId",
+                schema: "zamzam",
                 table: "AspNetUserLogins",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserRoles_RoleId",
+                schema: "zamzam",
                 table: "AspNetUserRoles",
                 column: "RoleId");
 
             migrationBuilder.CreateIndex(
                 name: "EmailIndex",
+                schema: "zamzam",
                 table: "AspNetUsers",
                 column: "NormalizedEmail");
 
             migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
+                schema: "zamzam",
                 table: "AspNetUsers",
                 column: "NormalizedUserName",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_ParentId",
+                schema: "zamzam",
                 table: "Categories",
                 column: "ParentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_Slug",
+                schema: "zamzam",
                 table: "Categories",
                 column: "Slug",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_DeliveryZones_Key",
+                schema: "zamzam",
                 table: "DeliveryZones",
                 column: "Key",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_IdempotencyKeys_CreatedAt",
+                schema: "zamzam",
                 table: "IdempotencyKeys",
                 column: "CreatedAt");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderLines_OrderId",
+                schema: "zamzam",
                 table: "OrderLines",
                 column: "OrderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderLines_VariantId",
+                schema: "zamzam",
                 table: "OrderLines",
                 column: "VariantId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_DeliveryZoneId",
+                schema: "zamzam",
                 table: "Orders",
                 column: "DeliveryZoneId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_Number",
+                schema: "zamzam",
                 table: "Orders",
                 column: "Number",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_Phone",
+                schema: "zamzam",
                 table: "Orders",
                 column: "Phone");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_Status_CreatedAt",
+                schema: "zamzam",
                 table: "Orders",
                 columns: new[] { "Status", "CreatedAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderStatusHistory_ChangedByUserId",
+                schema: "zamzam",
                 table: "OrderStatusHistory",
                 column: "ChangedByUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderStatusHistory_OrderId_ChangedAt",
+                schema: "zamzam",
                 table: "OrderStatusHistory",
                 columns: new[] { "OrderId", "ChangedAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductImages_ProductId_SortOrder",
+                schema: "zamzam",
                 table: "ProductImages",
                 columns: new[] { "ProductId", "SortOrder" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Products_CategoryId_IsVisible_IsDeleted",
+                schema: "zamzam",
                 table: "Products",
                 columns: new[] { "CategoryId", "IsVisible", "IsDeleted" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Products_Slug",
+                schema: "zamzam",
                 table: "Products",
                 column: "Slug",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductVariants_ColorId",
+                schema: "zamzam",
                 table: "ProductVariants",
                 column: "ColorId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductVariants_ProductId_Size_ColorId",
+                schema: "zamzam",
                 table: "ProductVariants",
                 columns: new[] { "ProductId", "Size", "ColorId" },
                 unique: true,
@@ -663,12 +730,14 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductVariants_Sku",
+                schema: "zamzam",
                 table: "ProductVariants",
                 column: "Sku",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_TailoringSpecs_OrderId",
+                schema: "zamzam",
                 table: "TailoringSpecs",
                 column: "OrderId",
                 unique: true);
@@ -678,73 +747,96 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "AspNetRoleClaims");
+                name: "AspNetRoleClaims",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "AspNetUserClaims");
+                name: "AspNetUserClaims",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "AspNetUserLogins");
+                name: "AspNetUserLogins",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "AspNetUserRoles");
+                name: "AspNetUserRoles",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "AspNetUserTokens");
+                name: "AspNetUserTokens",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "DataProtectionKeys");
+                name: "DataProtectionKeys",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "IdempotencyKeys");
+                name: "IdempotencyKeys",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "OrderLines");
+                name: "OrderLines",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "OrderStatusHistory");
+                name: "OrderStatusHistory",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "PriceRules");
+                name: "PriceRules",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "ProductImages");
+                name: "ProductImages",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "SiteSettings");
+                name: "SiteSettings",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "TailoringCatalog");
+                name: "TailoringCatalog",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "TailoringSpecs");
+                name: "TailoringSpecs",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "AspNetRoles");
+                name: "AspNetRoles",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "ProductVariants");
+                name: "ProductVariants",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "AspNetUsers",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "Orders");
+                name: "Orders",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "Colors");
+                name: "Colors",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "Products",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "DeliveryZones");
+                name: "DeliveryZones",
+                schema: "zamzam");
 
             migrationBuilder.DropTable(
-                name: "Categories");
+                name: "Categories",
+                schema: "zamzam");
 
             migrationBuilder.DropSequence(
-                name: "OrderNumbers");
+                name: "OrderNumbers",
+                schema: "zamzam");
         }
     }
 }

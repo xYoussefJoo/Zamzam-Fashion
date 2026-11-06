@@ -13,7 +13,9 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Zam
         var connectionString = Environment.GetEnvironmentVariable("ZAMZAM_DB")
             ?? "Host=localhost;Port=5432;Database=zamzam;Username=zamzam";
 
-        var options = new DbContextOptionsBuilder<ZamzamDbContext>().UseNpgsql(connectionString).Options;
+        var options = new DbContextOptionsBuilder<ZamzamDbContext>()
+            .UseNpgsql(connectionString, npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", ZamzamDbContext.Schema))
+            .Options;
         return new ZamzamDbContext(options, TimeProvider.System);
     }
 }

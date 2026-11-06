@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Zamzam.Application.Common;
 using Zamzam.Infrastructure.Identity;
 using Zamzam.Infrastructure.Persistence;
+using Zamzam.Infrastructure.Storage;
 
 namespace Zamzam.Infrastructure;
 
@@ -20,7 +22,17 @@ public static class DependencyInjection
                 "Connection string 'Zamzam' is missing. Set it with: dotnet user-secrets set \"ConnectionStrings:Zamzam\" \"Host=localhost;Port=5432;Database=zamzam;Username=zamzam;Password=...\"");
 
         services.AddSingleton(TimeProvider.System);
-        services.AddDbContext<ZamzamDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<ZamzamDbContext>(options => options.UseNpgsql(connectionString, npgsql => npgsql
+            .MigrationsHistoryTable("__EFMigrationsHistory", ZamzamDbContext.Schema)
+            // A product with 10 photos and 20 variants is 30 rows, not 200 (one query per list).
+            .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+
+        services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<ZamzamDbContext>());
+
+        services.AddOptions<StorageOptions>().Bind(configuration.GetSection(StorageOptions.Section));
+        services.AddHttpClient<SupabaseImageStorage>(client => client.Timeout = TimeSpan.FromSeconds(60));
+        services.AddScoped<IImageStorage>(provider => provider.GetRequiredService<SupabaseImageStorage>());
+        services.AddSingleton<IImageProcessor, SkiaImageProcessor>();
 
         services.AddOwnerIdentity();
         services.AddScoped<DatabaseSeeder>();

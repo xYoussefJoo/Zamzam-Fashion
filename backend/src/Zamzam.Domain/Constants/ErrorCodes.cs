@@ -11,4 +11,5 @@ public static class ErrorCodes
     public const string Duplicate = "DUPLICATE";
     public const string InUse = "IN_USE";
     public const string QuoteExpired = "QUOTE_EXPIRED";
+    public const string NotFound = "NOT_FOUND";
 }

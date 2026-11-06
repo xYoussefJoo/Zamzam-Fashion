@@ -71,7 +71,7 @@ internal sealed class ProductImageConfiguration : IEntityTypeConfiguration<Produ
 {
     public void Configure(EntityTypeBuilder<ProductImage> builder)
     {
-        builder.Property(i => i.Url).HasMaxLength(500);
+        builder.Property(i => i.StorageKey).HasMaxLength(300);
         builder.Property(i => i.AltAr).HasMaxLength(150);
         builder.Property(i => i.AltEn).HasMaxLength(150);
         builder.HasIndex(i => new { i.ProductId, i.SortOrder });

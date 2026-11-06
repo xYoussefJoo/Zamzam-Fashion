@@ -42,13 +42,17 @@ docker compose up -d
 # 2. Backend  → http://localhost:5055  (health: /health, OpenAPI: /openapi/v1.json)
 cd backend
 # one-time: secrets stay on your machine, never in git
-dotnet user-secrets set "ConnectionStrings:Zamzam" "Host=localhost;Port=5432;Database=zamzam;Username=zamzam;Password=<DB_PASSWORD from .env>" --project src/Zamzam.Api
+# Supabase (Connect → Session pooler). Local PostgreSQL works too: Host=localhost;Database=zamzam;...
+dotnet user-secrets set "ConnectionStrings:Zamzam" "Host=<pooler host>;Port=5432;Database=postgres;Username=postgres.<project-ref>;Password=<db password>;SSL Mode=Require" --project src/Zamzam.Api
+# Supabase Storage for product photos (Project Settings → API Keys → service_role / secret key)
+dotnet user-secrets set "Storage:ServiceKey" "<service_role key>" --project src/Zamzam.Api
 dotnet user-secrets set "Seed:OwnerEmail" "owner@example.com" --project src/Zamzam.Api
 dotnet user-secrets set "Seed:OwnerPassword" "<at least 10 characters>" --project src/Zamzam.Api
 dotnet user-secrets set "Seed:OwnerName" "Owner Name" --project src/Zamzam.Api
-# on start the API applies migrations and seeds governorates, colors, tailoring catalog, prices and the owner
+# on start the API applies migrations (schema "zamzam"), seeds governorates, colors, tailoring catalog,
+# prices, the owner, a demo catalog (Development only) and creates the storage buckets
 dotnet run --project src/Zamzam.Api
-dotnet test   # 77 unit tests
+dotnet test   # 114 tests
 
 # 3. Frontend → http://localhost:3000
 cd frontend
