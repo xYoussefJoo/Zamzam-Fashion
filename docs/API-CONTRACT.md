@@ -13,7 +13,7 @@
 | Routing | `/api/{resource}`, admin under `/api/admin/{resource}`. The browser calls `/api/*` on the site's own domain; Next.js forwards to the API |
 | Users | **One Owner account.** Customers never log in (guest checkout). The role system stays in the code so staff can be added later |
 | Auth | ASP.NET Identity httpOnly cookie `zz.auth` (Secure, SameSite=Strict, 8 h sliding). Lockout after 5 failed logins |
-| CSRF guard | Every admin POST/PUT/PATCH/DELETE sends `X-Requested-With: zamzam-admin` |
+| CSRF guard | Every POST/PUT/PATCH/DELETE to `/api/admin/*` and `/api/auth/*` sends `X-Requested-With: zamzam-admin` (otherwise `400 MISSING_CSRF_HEADER`) |
 | Customer access | Order number + `X-Tracking-Token` header (never in an API query string) |
 | Format | JSON camelCase · money in EGP with 2 decimals · ISO-8601 UTC dates · bilingual fields `nameAr` + `nameEn` · phones stored as `+201xxxxxxxxx` |
 | Pagination | `?page=1&pageSize=20` (max 100) → `{ items, page, pageSize, totalCount, totalPages }` |
@@ -335,6 +335,7 @@ Places a ready-made order. The server re-prices it and reserves stock in a singl
   "customer": {
     "name": "Mona Ahmed",
     "phone": "01012345678",
+    "email": "mona@example.com",
     "deliveryZoneId": 1,
     "city": "Nasr City",
     "address": "12 Abbas El Akkad St, building 4, floor 3, apt 7",
@@ -372,8 +373,8 @@ Places a ready-made order. The server re-prices it and reserves stock in a singl
 **Rules**
 - Prices from the client are never trusted. The server calculates every line again.
 - Stock is reserved with a concurrency token; on a conflict it retries up to 3 times.
-- Emails to the owner and the customer are sent after the commit.
-- Validation: name 3–100, address 10–500, lines 1–30, qty 1–10, acceptTerms = true, phone is an Egyptian mobile number.
+- Email is optional. When it is given, the customer gets the confirmation and the tracking link by email; the owner is always emailed. Emails are sent after the commit.
+- Validation: name 3–100, address 10–500, lines 1–30, qty 1–10, acceptTerms = true, phone is a required Egyptian mobile number, email is optional (max 254, valid format).
 
 **Errors**
 - 409 OUT_OF_STOCK — { items: [{ variantId, requested, available }] }
@@ -563,6 +564,7 @@ Submits a tailoring request with an optional reference photo.
   "customer": {
     "name": "",
     "phone": "",
+    "email": "",
     "deliveryZoneId": 1,
     "city": "",
     "address": ""
@@ -579,6 +581,10 @@ Submits a tailoring request with an optional reference photo.
     "hips": 98,
     "inseam": 76
   },
+  "lining": false,
+  "extras": [
+    "embroidery"
+  ],
   "notes": "Side pockets",
   "acceptTerms": true
 }
@@ -599,6 +605,8 @@ Submits a tailoring request with an optional reference photo.
 **Rules**
 - Measurement keys must belong to the chosen garment's groups; values are 1–300 cm.
 - In StandardSize mode, standardSize is required and measurements must be empty.
+- Email is optional; when given, the customer gets the tracking link and price updates by email.
+- lining and extras use the same keys as POST /api/tailoring/estimate; the server recalculates the estimate and stores it.
 - The photo's real file type is checked, it is re-encoded to WebP with EXIF removed, and it is stored in a private bucket.
 
 **Errors**
