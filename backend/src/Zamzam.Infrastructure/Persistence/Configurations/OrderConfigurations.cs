@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Zamzam.Domain.Entities;
+using Zamzam.Infrastructure.Identity;
 
 namespace Zamzam.Infrastructure.Persistence.Configurations;
 
@@ -60,9 +61,13 @@ internal sealed class OrderStatusHistoryConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<OrderStatusHistory> builder)
     {
         builder.ToTable("OrderStatusHistory");
-        builder.Property(h => h.ChangedByUserId).HasMaxLength(450); // Identity user id; FK added with Identity (T1.7)
         builder.Property(h => h.Note).HasMaxLength(500);
         builder.HasIndex(h => new { h.OrderId, h.ChangedAt });
+
+        // Who changed it. If that account is ever deleted, the history row stays with no user.
+        builder.Property(h => h.ChangedByUserId).HasMaxLength(450);
+        builder.HasOne<AppUser>().WithMany()
+            .HasForeignKey(h => h.ChangedByUserId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

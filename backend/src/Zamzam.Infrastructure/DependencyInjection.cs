@@ -1,12 +1,18 @@
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Zamzam.Infrastructure.Identity;
 using Zamzam.Infrastructure.Persistence;
 
 namespace Zamzam.Infrastructure;
 
 public static class DependencyInjection
 {
+    public const string AuthCookieName = "zz.auth";
+
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("Zamzam")
@@ -16,6 +22,60 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddDbContext<ZamzamDbContext>(options => options.UseNpgsql(connectionString));
 
+        services.AddOwnerIdentity();
+        services.AddScoped<DatabaseSeeder>();
+
         return services;
+    }
+
+    private static void AddOwnerIdentity(this IServiceCollection services)
+    {
+        services
+            .AddIdentity<AppUser, IdentityRole>(options =>
+            {
+                // Length beats complexity rules; the common-password list blocks the easy ones.
+                options.Password.RequiredLength = 10;
+                options.Password.RequiredUniqueChars = 4;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+
+                // 5 wrong passwords -> locked for 15 minutes.
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.AllowedForNewUsers = true;
+
+                options.User.RequireUniqueEmail = true;
+            })
+            .AddEntityFrameworkStores<ZamzamDbContext>()
+            .AddPasswordValidator<CommonPasswordValidator>();
+
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.Cookie.Name = AuthCookieName;
+            options.Cookie.HttpOnly = true;                          // JavaScript can't read it (XSS can't steal it)
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only (browsers allow localhost)
+            options.Cookie.SameSite = SameSiteMode.Strict;           // other sites can't use the owner's login
+            options.ExpireTimeSpan = TimeSpan.FromHours(8);
+            options.SlidingExpiration = true;
+
+            // This is an API: answer 401/403 instead of redirecting to a login page.
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            };
+        });
+
+        // The keys that encrypt the cookie live in the database, so redeploys don't log the owner out.
+        services.AddDataProtection()
+            .PersistKeysToDbContext<ZamzamDbContext>()
+            .SetApplicationName("Zamzam");
     }
 }
