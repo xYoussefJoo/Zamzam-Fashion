@@ -127,6 +127,54 @@ try {
     $r = Call DELETE "/api/admin/colors/$colorId"
     Check '#34 delete unused color' ($r.Status -eq 204) "($($r.Status))"
 
+    # ---------- Day 3: orders (#9-11, #35-37, #41-42) on a demo product
+    $r = Call GET '/api/delivery-zones'
+    Check '#9 public delivery zones' ($r.Status -eq 200 -and $r.Json.Count -ge 1) "($($r.Json.Count) active)"
+    $zone = $r.Json[0]
+
+    $r = Call GET '/api/admin/delivery-zones'
+    Check '#41 admin delivery zones' ($r.Status -eq 200 -and $r.Json.Count -eq 27) "($($r.Json.Count))"
+    $z = $r.Json | Where-Object { $_.id -eq $zone.id }
+    $r = Call PUT '/api/admin/delivery-zones' @(@{ id = $z.id; fee = $z.fee; etaDaysMin = $z.etaDaysMin; etaDaysMax = $z.etaDaysMax; isActive = $true })
+    Check '#42 update delivery zones' ($r.Status -eq 200)
+
+    $r = Call GET '/api/products/classic-blouse'
+    $v = $r.Json.variants | Where-Object { $_.inStock } | Select-Object -First 1
+    $stockBefore = if ($v.stock -ne $null) { $v.stock } else { 'more than 5' }
+    $order = @{
+        customer = @{ name = 'Smoke Test Buyer'; phone = '01112345678'; email = $null; deliveryZoneId = $zone.id
+                      city = 'Nasr City'; address = '12 Abbas El Akkad St, apt 7'; notes = 'automated smoke test' }
+        lines = @(@{ variantId = $v.id; qty = 1 }); paymentMethod = 'CashOnDelivery'
+        expectedTotal = [decimal]$v.price + [decimal]$zone.fee; acceptTerms = $true
+    }
+    $curlKey = "smoke-$([guid]::NewGuid().ToString('N'))"
+    $saved = $csrf; $script:csrf = "Idempotency-Key: $curlKey"
+    $r = Call POST '/api/orders' $order
+    $script:csrf = $saved
+    Check '#10 place an order' ($r.Status -eq 201) "($($r.Json.number), total $($r.Json.total))"
+    $number = $r.Json.number; $token = $r.Json.trackingToken
+
+    $track = & curl.exe -s "$api/api/orders/$number" -H "X-Tracking-Token: $token" | ConvertFrom-Json
+    Check '#11 customer tracking (masked)' ($track.customer.name -eq 'Smoke T.') "($($track.customer.name), $($track.customer.phone))"
+
+    $r = Call GET "/api/admin/orders?q=$number"
+    Check '#35 order board finds it' ($r.Status -eq 200 -and $r.Json.totalCount -eq 1)
+    $orderId = $r.Json.items[0].id
+
+    $r = Call GET "/api/admin/orders/$orderId"
+    Check '#36 order details (unmasked)' ($r.Status -eq 200 -and $r.Json.customer.phone -eq '+201112345678')
+
+    $r = Call POST "/api/admin/orders/$orderId/status" @{ to = 'Shipped'; note = $null }
+    Check '#37 skipping steps refused' ($r.Status -eq 409 -and $r.Json.code -eq 'INVALID_STATUS_TRANSITION')
+    $r = Call POST "/api/admin/orders/$orderId/status" @{ to = 'Confirmed'; note = 'Confirmed by phone (smoke test)' }
+    Check '#37 confirm' ($r.Status -eq 200 -and $r.Json.status -eq 'Confirmed') "(by $($r.Json.history[-1].changedBy))"
+    $r = Call POST "/api/admin/orders/$orderId/status" @{ to = 'Cancelled'; note = 'Smoke test clean-up' }
+    Check '#37 cancel' ($r.Status -eq 200 -and $r.Json.status -eq 'Cancelled')
+
+    $after = (Call GET '/api/products/classic-blouse').Json.variants | Where-Object { $_.id -eq $v.id }
+    $stockAfter = if ($after.stock -ne $null) { $after.stock } else { 'more than 5' }
+    Check 'cancel put the stock back' ("$stockAfter" -eq "$stockBefore") "(before $stockBefore, after $stockAfter)"
+
     # ---------- logout (#2)
     $r = Call POST '/api/auth/logout'
     Check '#2 logout' ($r.Status -eq 204)

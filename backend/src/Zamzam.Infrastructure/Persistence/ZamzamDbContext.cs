@@ -13,6 +13,8 @@ namespace Zamzam.Infrastructure.Persistence;
 public class ZamzamDbContext(DbContextOptions<ZamzamDbContext> options, TimeProvider clock)
     : IdentityDbContext<AppUser>(options), IDataProtectionKeyContext, IAppDbContext
 {
+    public void ClearChanges() => ChangeTracker.Clear();
+
     public async Task<T> InTransactionAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken)
     {
         if (Database.CurrentTransaction is not null) return await work(cancellationToken);

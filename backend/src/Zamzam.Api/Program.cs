@@ -37,9 +37,13 @@ builder.Services.AddAuthorizationBuilder()
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy(RateLimitPolicies.Login, context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1) }));
+    void PerIp(string policy, int permits, TimeSpan window) => options.AddPolicy(policy, context =>
+        RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = permits, Window = window }));
+
+    PerIp(RateLimitPolicies.Login, 5, TimeSpan.FromMinutes(1));
+    PerIp(RateLimitPolicies.PlaceOrder, 10, TimeSpan.FromMinutes(10));
+    PerIp(RateLimitPolicies.Tracking, 30, TimeSpan.FromMinutes(1));
     options.OnRejected = (context, _) =>
     {
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))

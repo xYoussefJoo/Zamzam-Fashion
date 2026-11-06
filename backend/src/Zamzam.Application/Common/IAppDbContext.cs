@@ -24,6 +24,9 @@ public interface IAppDbContext
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
+    // Forgets everything loaded so far, so a retry starts from fresh database values.
+    void ClearChanges();
+
     // Runs the work in one database transaction: everything is saved, or nothing is.
     Task<T> InTransactionAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken);
 }

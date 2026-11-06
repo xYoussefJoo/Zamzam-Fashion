@@ -52,7 +52,7 @@ dotnet user-secrets set "Seed:OwnerName" "Owner Name" --project src/Zamzam.Api
 # on start the API applies migrations (schema "zamzam"), seeds governorates, colors, tailoring catalog,
 # prices, the owner, a demo catalog (Development only) and creates the storage buckets
 dotnet run --project src/Zamzam.Api
-dotnet test   # 114 tests
+dotnet test   # 133 unit tests (+4 PostgreSQL integration tests that run in GitHub Actions; skipped without Docker)
 
 # 3. Frontend → http://localhost:3000
 cd frontend

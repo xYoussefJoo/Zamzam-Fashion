@@ -8,6 +8,8 @@ public static class Policies
 
 public static class RateLimitPolicies
 {
-    // 5 login attempts per minute per IP (docs/API-CONTRACT.md, Conventions).
-    public const string Login = "login";
+    // Per IP (docs/API-CONTRACT.md, Conventions).
+    public const string Login = "login";       // 5 per minute
+    public const string PlaceOrder = "orders"; // 10 per 10 minutes
+    public const string Tracking = "tracking"; // 30 per minute
 }

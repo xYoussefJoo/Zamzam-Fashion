@@ -5,7 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Zamzam.Application.Common;
+using Zamzam.Application.Orders;
+using Zamzam.Infrastructure.Email;
 using Zamzam.Infrastructure.Identity;
+using Zamzam.Infrastructure.Orders;
 using Zamzam.Infrastructure.Persistence;
 using Zamzam.Infrastructure.Storage;
 
@@ -33,6 +36,14 @@ public static class DependencyInjection
         services.AddHttpClient<SupabaseImageStorage>(client => client.Timeout = TimeSpan.FromSeconds(60));
         services.AddScoped<IImageStorage>(provider => provider.GetRequiredService<SupabaseImageStorage>());
         services.AddSingleton<IImageProcessor, SkiaImageProcessor>();
+
+        services.AddScoped<IOrderNumberGenerator, OrderNumberGenerator>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddSingleton<ISiteLinks, SiteLinks>();
+        services.AddSingleton<EmailQueue>();
+        services.AddSingleton<IEmailQueue>(provider => provider.GetRequiredService<EmailQueue>());
+        services.AddSingleton<IEmailSender, LogOnlyEmailSender>(); // Day 4: a real provider at deploy
+        services.AddHostedService<EmailBackgroundService>();
 
         services.AddOwnerIdentity();
         services.AddScoped<DatabaseSeeder>();
