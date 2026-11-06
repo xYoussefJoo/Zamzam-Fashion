@@ -1,11 +1,19 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Zamzam.Domain.Entities;
 using Zamzam.Domain.Enums;
+using Zamzam.Infrastructure.Identity;
 
 namespace Zamzam.Infrastructure.Persistence;
 
-public class ZamzamDbContext(DbContextOptions<ZamzamDbContext> options, TimeProvider clock) : DbContext(options)
+// IdentityDbContext adds the AspNet* tables (users, roles, ...).
+// IDataProtectionKeyContext stores the keys that encrypt the login cookie, so logins survive restarts.
+public class ZamzamDbContext(DbContextOptions<ZamzamDbContext> options, TimeProvider clock)
+    : IdentityDbContext<AppUser>(options), IDataProtectionKeyContext
 {
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
+
     public const string OrderNumberSequence = "OrderNumbers";
 
     public DbSet<Category> Categories => Set<Category>();
@@ -27,6 +35,7 @@ public class ZamzamDbContext(DbContextOptions<ZamzamDbContext> options, TimeProv
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder); // Identity tables first
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ZamzamDbContext).Assembly);
 
         // ZF-10001, ZF-10002, ... Read with nextval() when an order is created.

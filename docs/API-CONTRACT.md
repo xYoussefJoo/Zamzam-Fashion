@@ -13,7 +13,7 @@
 | Routing | `/api/{resource}`, admin under `/api/admin/{resource}`. The browser calls `/api/*` on the site's own domain; Next.js forwards to the API |
 | Users | **One Owner account.** Customers never log in (guest checkout). The role system stays in the code so staff can be added later |
 | Auth | ASP.NET Identity httpOnly cookie `zz.auth` (Secure, SameSite=Strict, 8 h sliding). Lockout after 5 failed logins |
-| CSRF guard | Every admin POST/PUT/PATCH/DELETE sends `X-Requested-With: zamzam-admin` |
+| CSRF guard | Every POST/PUT/PATCH/DELETE to `/api/admin/*` and `/api/auth/*` sends `X-Requested-With: zamzam-admin` (otherwise `400 MISSING_CSRF_HEADER`) |
 | Customer access | Order number + `X-Tracking-Token` header (never in an API query string) |
 | Format | JSON camelCase · money in EGP with 2 decimals · ISO-8601 UTC dates · bilingual fields `nameAr` + `nameEn` · phones stored as `+201xxxxxxxxx` |
 | Pagination | `?page=1&pageSize=20` (max 100) → `{ items, page, pageSize, totalCount, totalPages }` |
