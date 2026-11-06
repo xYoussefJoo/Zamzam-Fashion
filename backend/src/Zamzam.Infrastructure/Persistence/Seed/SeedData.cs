@@ -156,6 +156,42 @@ internal static class SeedData
             MeasurementGroups: groups);
     }
 
+    // ---------- demo catalog (development only, until the client sends real products)
+
+    public sealed record DemoCategory(string Slug, string NameAr, string NameEn, string? ParentSlug, int SortOrder);
+
+    public sealed record DemoProduct(string CategorySlug, string NameAr, string NameEn, string DescriptionAr,
+        string DescriptionEn, decimal Price, string[] Sizes, string[] Colors);
+
+    public static IReadOnlyList<DemoCategory> DemoCategories() =>
+    [
+        new("dresses", "فساتين وعبايات", "Dresses & Abayas", null, 0),
+        new("abayas", "عبايات", "Abayas", "dresses", 0),
+        new("trousers", "بناطيل", "Trousers", null, 1),
+        new("blouses", "بلوزات", "Blouses", null, 2),
+        new("sets", "أطقم", "Co-ord Sets", null, 3),
+    ];
+
+    public static IReadOnlyList<DemoProduct> DemoProducts() =>
+    [
+        new("abayas", "عباية محتشمة", "Modest Abaya", "عباية كريب واسعة بحزام.", "Flowing crepe abaya with a belt.",
+            1250, ["M", "L", "XL"], ["Beige", "Black"]),
+        new("dresses", "فستان محتشم كحلي", "Modest Navy Dress", "فستان طويل بأكمام كاملة.", "Long dress with full sleeves.",
+            1350, ["M", "L", "XL"], ["Navy", "Black"]),
+        new("dresses", "فستان طويل محتشم", "Long Modest Dress", "فستان ماكسي خفيف لكل يوم.", "Light maxi dress for every day.",
+            1450, ["M", "L", "XL"], ["Navy", "Beige"]),
+        new("trousers", "بنطلون واسع", "Wide-leg Trousers", "بنطلون كتان مريح بخصر عالٍ.", "Comfortable high-waist linen trousers.",
+            850, ["S", "M", "L", "XL"], ["Beige", "Navy", "Black"]),
+        new("trousers", "بنطلون بالازو بني", "Brown Palazzo Trousers", "بالازو كريب انسيابي.", "Flowing crepe palazzo trousers.",
+            1050, ["S", "M", "L", "XL"], ["Brown", "Navy"]),
+        new("blouses", "بلوزة كلاسيك", "Classic Blouse", "بلوزة قطن بأكمام طويلة.", "Long-sleeve cotton blouse.",
+            690, ["S", "M", "L"], ["White", "Beige", "Pink"]),
+        new("blouses", "بلوزة بربطة رقبة", "Tie-neck Blouse", "بلوزة كريب بربطة عند الرقبة.", "Crepe blouse with a neck tie.",
+            820, ["S", "M", "L"], ["Beige", "Navy"]),
+        new("sets", "طقم كاجوال", "Casual Co-ord Set", "طقم بلوزة وبنطلون من الكتان.", "Linen blouse and trousers set.",
+            1550, ["S", "M", "L", "XL"], ["Navy", "Beige"]),
+    ];
+
     // Starting prices (EGP) so the calculator works on day one. The owner sets the real ones.
     public static PriceRulesContent PriceRules() => new(
         GarmentBasePrices:

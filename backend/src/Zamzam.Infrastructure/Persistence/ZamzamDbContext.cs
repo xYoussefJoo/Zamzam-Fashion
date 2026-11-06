@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Zamzam.Application.Common;
 using Zamzam.Domain.Entities;
 using Zamzam.Domain.Enums;
 using Zamzam.Infrastructure.Identity;
@@ -10,10 +11,22 @@ namespace Zamzam.Infrastructure.Persistence;
 // IdentityDbContext adds the AspNet* tables (users, roles, ...).
 // IDataProtectionKeyContext stores the keys that encrypt the login cookie, so logins survive restarts.
 public class ZamzamDbContext(DbContextOptions<ZamzamDbContext> options, TimeProvider clock)
-    : IdentityDbContext<AppUser>(options), IDataProtectionKeyContext
+    : IdentityDbContext<AppUser>(options), IDataProtectionKeyContext, IAppDbContext
 {
+    public async Task<T> InTransactionAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken)
+    {
+        if (Database.CurrentTransaction is not null) return await work(cancellationToken);
+
+        await using var transaction = await Database.BeginTransactionAsync(cancellationToken);
+        var result = await work(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
+
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
+    // Our own schema, not "public": Supabase publishes the public schema as a web API.
+    public const string Schema = "zamzam";
     public const string OrderNumberSequence = "OrderNumbers";
 
     public DbSet<Category> Categories => Set<Category>();
@@ -36,6 +49,7 @@ public class ZamzamDbContext(DbContextOptions<ZamzamDbContext> options, TimeProv
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder); // Identity tables first
+        modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ZamzamDbContext).Assembly);
 
         // ZF-10001, ZF-10002, ... Read with nextval() when an order is created.

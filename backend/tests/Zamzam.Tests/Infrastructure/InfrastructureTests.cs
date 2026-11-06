@@ -49,22 +49,22 @@ public class DatabaseModelTests
     {
         var sql = CreateScript();
 
-        Assert.Contains("CREATE SEQUENCE \"OrderNumbers\" START WITH 10001", sql);        // order numbers
+        Assert.Contains("CREATE SEQUENCE zamzam.\"OrderNumbers\" START WITH 10001", sql);        // order numbers
         Assert.Contains("\"CustomerName\" character varying(100) NOT NULL", sql);        // value object columns
         Assert.Contains("\"Measurements\" jsonb", sql);                                  // jsonb documents
         Assert.Contains("\"Content\" jsonb", sql);
         Assert.Contains("\"Status\" character varying(30) NOT NULL", sql);               // enums as text
         Assert.Contains("numeric(18,2)", sql);                                           // money
         Assert.Contains("WHERE \"IsDeleted\" = false", sql);                             // one active size+color
-        Assert.Contains("CREATE TABLE \"AspNetUsers\"", sql);                            // Identity
-        Assert.Contains("CREATE TABLE \"DataProtectionKeys\"", sql);
+        Assert.Contains("CREATE TABLE zamzam.\"AspNetUsers\"", sql);                            // Identity
+        Assert.Contains("CREATE TABLE zamzam.\"DataProtectionKeys\"", sql);
         Assert.DoesNotContain("\"Version\"", sql);                                       // xmin is a system column
     }
 
     [Fact]
     public void A_variant_that_was_ordered_cannot_be_hard_deleted()
     {
-        Assert.Contains("REFERENCES \"ProductVariants\" (\"Id\") ON DELETE RESTRICT", CreateScript());
+        Assert.Contains("REFERENCES zamzam.\"ProductVariants\" (\"Id\") ON DELETE RESTRICT", CreateScript());
     }
 }
 
@@ -82,4 +82,20 @@ public class CommonPasswordValidatorTests
 
     [Fact]
     public async Task A_long_unusual_password_is_accepted() => Assert.True(await IsAccepted("blue tailor cactus 77"));
+}
+
+public class DatabaseSchemaTests
+{
+    [Fact]
+    public void Nothing_is_created_in_the_public_schema()
+    {
+        // Supabase publishes the public schema as a web API, so our tables must never live there.
+        var options = new DbContextOptionsBuilder<ZamzamDbContext>().UseNpgsql("Host=localhost;Database=model-only").Options;
+        using var db = new ZamzamDbContext(options, TimeProvider.System);
+        var sql = db.Database.GenerateCreateScript();
+
+        Assert.Contains("CREATE SCHEMA zamzam", sql);
+        Assert.DoesNotContain("CREATE TABLE \"", sql);  // every table is schema-qualified
+        Assert.DoesNotContain("public.", sql);
+    }
 }

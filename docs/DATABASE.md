@@ -1,6 +1,6 @@
 # Zamzam Fashion — Database
 
-PostgreSQL 17 · EF Core. Readable version: [database-erd.pdf](database-erd.pdf) (overview + one page per group) or the images in [database/](database/). GitHub draws the diagram below automatically.
+PostgreSQL 17 (Supabase) · EF Core · schema `zamzam`. Readable version: [database-erd.pdf](database-erd.pdf) (overview + one page per group) or the images in [database/](database/). GitHub draws the diagram below automatically.
 
 Every table that inherits `Entity` also has `CreatedAt` and `UpdatedAt` (set automatically when saving).
 
@@ -54,7 +54,7 @@ erDiagram
     ProductImages {
         int Id PK
         int ProductId FK
-        string Url "R2 / CDN"
+        string StorageKey "Supabase Storage key"
         string AltAr
         string AltEn
         int SortOrder "0 = main photo"

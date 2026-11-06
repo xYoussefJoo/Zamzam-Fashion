@@ -81,13 +81,13 @@ public class Product : Entity
 
     // ---------- images (the first one is the main photo)
 
-    public ProductImage AddImage(string url, string? altAr, string? altEn)
+    public ProductImage AddImage(string storageKey, string? altAr, string? altEn)
     {
         EnsureNotDeleted();
         if (_images.Count >= MaxImages)
             throw new DomainException(ErrorCodes.Validation, $"A product can have at most {MaxImages} photos.");
 
-        var image = new ProductImage(url, altAr, altEn, _images.Count);
+        var image = new ProductImage(storageKey, altAr, altEn, _images.Count);
         _images.Add(image);
         return image;
     }

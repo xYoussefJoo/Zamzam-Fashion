@@ -1,7 +1,9 @@
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Serilog;
 using Zamzam.Api.Errors;
 using Zamzam.Api.Security;
+using Zamzam.Application;
 using Zamzam.Domain.Constants;
 using Zamzam.Infrastructure;
 using Zamzam.Infrastructure.Persistence;
@@ -12,8 +14,11 @@ builder.Host.UseSerilog((context, config) => config
     .ReadFrom.Configuration(context.Configuration)
     .WriteTo.Console());
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers(options => options.Filters.Add<ValidationFilter>())
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
@@ -48,8 +53,9 @@ var app = builder.Build();
 if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
     await app.Services.MigrateAndSeedAsync();
 
-app.UseExceptionHandler();
+// Request logging wraps the exception handler, so it logs the final status (409, 404…), not a 500.
 app.UseSerilogRequestLogging();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

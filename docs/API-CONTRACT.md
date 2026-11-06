@@ -881,7 +881,7 @@ Removes a variant (a soft delete if it was ever ordered).
 
 ## 8. Admin · Product Image APIs (`/api/admin/images`)
 
-_Images are stored in Cloudflare R2 and served through the CDN._
+_Images are stored in Supabase Storage (public bucket product-images) as WebP 400/800/1600._
 
 ### #29 `POST /api/admin/products/{id}/images`
 
@@ -904,7 +904,7 @@ Uploads a product photo.
 ```
 
 **Rules**
-- jpeg/png/webp only, max 5 MB, max 10 images per product.
+- jpeg/png/webp only (checked by the file bytes), max 5 MB and 40 megapixels, max 10 images per product.
 - The server creates 400 / 800 / 1600 px WebP versions.
 - The first uploaded photo is the main photo; deleting it promotes the next one.
 

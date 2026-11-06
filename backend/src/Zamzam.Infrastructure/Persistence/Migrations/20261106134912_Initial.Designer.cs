@@ -12,7 +12,7 @@ using Zamzam.Infrastructure.Persistence;
 namespace Zamzam.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ZamzamDbContext))]
-    [Migration("20261106112349_Initial")]
+    [Migration("20261106134912_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,6 +20,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("zamzam")
                 .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -44,7 +45,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DataProtectionKeys");
+                    b.ToTable("DataProtectionKeys", "zamzam");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -70,7 +71,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("RoleNameIndex");
 
-                    b.ToTable("AspNetRoles", (string)null);
+                    b.ToTable("AspNetRoles", "zamzam");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -95,7 +96,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetRoleClaims", (string)null);
+                    b.ToTable("AspNetRoleClaims", "zamzam");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -120,7 +121,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserClaims", (string)null);
+                    b.ToTable("AspNetUserClaims", "zamzam");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
@@ -142,7 +143,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserLogins", (string)null);
+                    b.ToTable("AspNetUserLogins", "zamzam");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
@@ -157,7 +158,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetUserRoles", (string)null);
+                    b.ToTable("AspNetUserRoles", "zamzam");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -176,7 +177,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
-                    b.ToTable("AspNetUserTokens", (string)null);
+                    b.ToTable("AspNetUserTokens", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.Category", b =>
@@ -228,7 +229,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.Color", b =>
@@ -263,7 +264,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Colors");
+                    b.ToTable("Colors", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.DeliveryZone", b =>
@@ -313,7 +314,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("DeliveryZones");
+                    b.ToTable("DeliveryZones", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.Order", b =>
@@ -384,7 +385,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.OrderLine", b =>
@@ -453,7 +454,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("VariantId");
 
-                    b.ToTable("OrderLines");
+                    b.ToTable("OrderLines", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.OrderStatusHistory", b =>
@@ -499,7 +500,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrderId", "ChangedAt");
 
-                    b.ToTable("OrderStatusHistory", (string)null);
+                    b.ToTable("OrderStatusHistory", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.PriceRules", b =>
@@ -522,7 +523,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PriceRules", (string)null);
+                    b.ToTable("PriceRules", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.Product", b =>
@@ -582,7 +583,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CategoryId", "IsVisible", "IsDeleted");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.ProductImage", b =>
@@ -610,19 +611,19 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
 
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId", "SortOrder");
 
-                    b.ToTable("ProductImages");
+                    b.ToTable("ProductImages", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.ProductVariant", b =>
@@ -682,7 +683,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");
 
-                    b.ToTable("ProductVariants");
+                    b.ToTable("ProductVariants", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.SiteSettings", b =>
@@ -705,7 +706,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SiteSettings", (string)null);
+                    b.ToTable("SiteSettings", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.TailoringCatalog", b =>
@@ -728,7 +729,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TailoringCatalog", (string)null);
+                    b.ToTable("TailoringCatalog", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Domain.Entities.TailoringSpec", b =>
@@ -819,7 +820,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrderId")
                         .IsUnique();
 
-                    b.ToTable("TailoringSpecs");
+                    b.ToTable("TailoringSpecs", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Infrastructure.Identity.AppUser", b =>
@@ -891,7 +892,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
-                    b.ToTable("AspNetUsers", (string)null);
+                    b.ToTable("AspNetUsers", "zamzam");
                 });
 
             modelBuilder.Entity("Zamzam.Infrastructure.Persistence.IdempotencyRecord", b =>
@@ -924,7 +925,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.ToTable("IdempotencyKeys", (string)null);
+                    b.ToTable("IdempotencyKeys", "zamzam");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -1039,7 +1040,7 @@ namespace Zamzam.Infrastructure.Persistence.Migrations
 
                             b1.HasIndex("Phone");
 
-                            b1.ToTable("Orders");
+                            b1.ToTable("Orders", "zamzam");
 
                             b1.WithOwner()
                                 .HasForeignKey("OrderId");
