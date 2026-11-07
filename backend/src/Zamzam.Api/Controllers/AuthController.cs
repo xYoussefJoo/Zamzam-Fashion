@@ -43,6 +43,7 @@ public sealed class AuthController(
     // #2
     [HttpPost("logout")]
     [Authorize(Policy = Policies.Owner)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout()
     {
         await signIn.SignOutAsync();
@@ -62,6 +63,7 @@ public sealed class AuthController(
     // #4
     [HttpPost("change-password")]
     [Authorize(Policy = Policies.Owner)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
     {
         var user = await users.GetUserAsync(User);

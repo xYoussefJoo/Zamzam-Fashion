@@ -1,6 +1,7 @@
 # Zamzam Fashion — API Contract
 
-> **Version** 1.1 · 2026-11-05 · Generated from the same source as `Zamzam-API-Plan.docx` and `Zamzam-API-Specifications.docx`.
+> **Version** 1.2 · 2026-11-07 (synced with the code after Day 4) · Generated from the same source as `Zamzam-API-Plan.docx` and `Zamzam-API-Specifications.docx`.
+> **Machine-readable:** `docs/openapi.json` is exported from the running API. Generate TypeScript types from it with `npx openapi-typescript ../docs/openapi.json -o src/types/api.ts` (run in `frontend/`).
 > The backend is built against this file, and the Next.js UI uses the same file. Change the route or shape here and in the docs together.
 
 **47 endpoints:** 12 public · 4 auth · 31 admin (+ `GET /health`)
@@ -19,7 +20,12 @@
 | Pagination | `?page=1&pageSize=20` (max 100) → `{ items, page, pageSize, totalCount, totalPages }` |
 | Errors | RFC 9457 ProblemDetails with `code` and `traceId` (see Appendix B) |
 | Idempotency | `POST /api/orders` and `POST /api/tailoring/requests` require `Idempotency-Key: <uuid>` |
-| Rate limits (per IP) | login 5/min · order and tailoring creation 10 per 10 min · tracking/quotes 30/min · estimate 60/min · other public GETs 120/min |
+| Rate limits (per IP) | every request 300/min (global) · login 5/min · order + tailoring creation 10 per 10 min combined · tracking and quote answers 30/min · estimate 60/min · tailoring catalog 120/min. A 429 has an empty body and a Retry-After header |
+| Caching | `Cache-Control: public, max-age=300` on categories, site settings, delivery zones and the tailoring catalog. Products are not cached yet |
+| Behind Vercel | The API trusts `X-Forwarded-For` only when the request carries `X-Proxy-Secret` (= `Proxy:SharedSecret`, 32+ chars). Next.js `rewrites()` can't add it, so the frontend forwards `/api` from `src/proxy.ts` — **required before launch** |
+| Health | `GET /health` → `{ "status", "db", "storage" }`, `no-store`, no rate limit. 503 only when the database is down |
+| Security headers | Every response: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `CSP default-src 'none'`, `CORP same-site`; HSTS outside Development. No CORS: only same-site calls |
+| Empty bodies | `401` (not signed in), `403` and `429` have no body; read the status code |
 
 
 ---
@@ -177,11 +183,17 @@ Paged product list with filters, search and sorting. Only visible products in vi
       "minPrice": 1250,
       "maxPrice": 1250,
       "image": {
-        "url": "https://cdn…/12-800.webp"
+        "id": 40,
+        "url": "https://cdn…/12/40-800.webp",
+        "srcSet": "…-400.webp 400w, …-800.webp 800w, …-1600.webp 1600w",
+        "altAr": "",
+        "altEn": "Front view",
+        "sortOrder": 0
       },
       "colors": [
         {
           "id": 3,
+          "nameAr": "بيج",
           "nameEn": "Beige",
           "hex": "#d6b995"
         }
@@ -191,7 +203,8 @@ Paged product list with filters, search and sorting. Only visible products in vi
         "L",
         "XL"
       ],
-      "inStock": true
+      "inStock": true,
+      "createdAt": "2026-11-05T14:30:00Z"
     }
   ],
   "page": 1,
@@ -204,6 +217,7 @@ Paged product list with filters, search and sorting. Only visible products in vi
 **Rules**
 - A category filter includes all of its sub-categories.
 - q searches the Arabic name, English name and SKU (minimum 2 characters).
+- image is the main photo (or null) and has the same shape as images[] in #7.
 
 ### #7 `GET /api/products/{slug}`
 
@@ -219,14 +233,25 @@ Product page: gallery, description and every variant with its price and stock.
   "slug": "modest-abaya",
   "nameAr": "عباية محتشمة",
   "nameEn": "Modest Abaya",
+  "category": {
+    "id": 3,
+    "slug": "dresses",
+    "nameAr": "فساتين",
+    "nameEn": "Dresses"
+  },
   "descriptionAr": "…",
   "descriptionEn": "…",
+  "minPrice": 1250,
+  "maxPrice": 1300,
+  "inStock": true,
   "images": [
     {
       "id": 40,
       "url": "…-800.webp",
-      "srcSet": "…-400.webp 400w, …-800.webp 800w",
-      "altEn": "Front view"
+      "srcSet": "…-400.webp 400w, …-800.webp 800w, …-1600.webp 1600w",
+      "altAr": "",
+      "altEn": "Front view",
+      "sortOrder": 0
     }
   ],
   "variants": [
@@ -236,6 +261,7 @@ Product page: gallery, description and every variant with its price and stock.
       "size": "M",
       "color": {
         "id": 3,
+        "nameAr": "بيج",
         "nameEn": "Beige",
         "hex": "#d6b995"
       },
@@ -279,7 +305,7 @@ Editable home page content: announcement bar, hero, new collection, contacts and
   },
   "contact": {
     "phone": "",
-    "whatsapp": "",
+    "whatsApp": "",
     "email": "",
     "addressAr": "",
     "addressEn": ""
@@ -287,10 +313,13 @@ Editable home page content: announcement bar, hero, new collection, contacts and
   "social": {
     "facebook": "",
     "instagram": "",
-    "tiktok": ""
+    "tikTok": ""
   }
 }
 ```
+
+**Rules**
+- Note the capitals: whatsApp and tikTok.
 
 
 ---
@@ -303,7 +332,7 @@ _Guest checkout with cash on delivery. The customer gets an order number and a p
 
 Lists the active governorates with their delivery fee and delivery time.
 
-- **Access:** Public · **Day 3**
+- **Access:** Public · cache 5 min · **Day 3**
 
 **Response 200 OK**
 
@@ -325,7 +354,7 @@ Lists the active governorates with their delivery fee and delivery time.
 
 Places a ready-made order. The server re-prices it and reserves stock in a single transaction.
 
-- **Access:** Public · 10 per 10 min per IP · **Day 3**
+- **Access:** Public · 10 per 10 min per IP (shared with #14) · **Day 3**
 - **Headers:** Idempotency-Key: <uuid> (required; a repeated key returns the original response)
 
 **Payload**
@@ -400,10 +429,28 @@ Public order tracking page data. Personal data is masked.
     "name": "Mona A.",
     "phone": "+20101****678",
     "zone": {
+      "nameAr": "القاهرة",
       "nameEn": "Cairo"
     }
   },
+  "lines": [
+    {
+      "variantId": 501,
+      "productNameAr": "عباية محتشمة",
+      "productNameEn": "Modest Abaya",
+      "size": "M",
+      "colorNameAr": "بيج",
+      "colorNameEn": "Beige",
+      "unitPrice": 850,
+      "qty": 2,
+      "lineTotal": 1700,
+      "imageUrl": "…-400.webp"
+    }
+  ],
+  "subtotal": 1700,
+  "deliveryFee": 65,
   "total": 1765,
+  "paymentMethod": "CashOnDelivery",
   "paymentStatus": "Unpaid",
   "timeline": [
     {
@@ -415,6 +462,9 @@ Public order tracking page data. Personal data is masked.
   "tailoring": null
 }
 ```
+
+**Rules**
+- For a Custom order, tailoring = { garment, fabric, color, fit, estimatedPrice, quotedPrice, quoteNote, quoteValidUntil } and lines is empty.
 
 **Errors**
 - 404 Not Found for an unknown number or a wrong token (never reveal which)
@@ -430,7 +480,7 @@ _Custom orders: instant price estimate → request → owner confirms or adjusts
 
 Returns the styles, garment types, fabrics, fits and measurement fields used by the request form.
 
-- **Access:** Public · **Day 4**
+- **Access:** Public · cache 5 min · 120/min · **Day 4**
 
 **Response 200 OK**
 
@@ -444,29 +494,36 @@ Returns the styles, garment types, fabrics, fits and measurement fields used by 
       "measurementGroups": [
         "common",
         "pants"
-      ]
+      ],
+      "isActive": true
     }
   ],
   "styles": [
     {
       "id": "wide_pants",
       "garment": "pants",
+      "nameAr": "بنطلون واسع",
       "nameEn": "Wide-leg trousers",
       "defaultFabric": "linen",
-      "defaultFit": "Relaxed"
+      "defaultFit": "Relaxed",
+      "imageUrl": null,
+      "isActive": true
     }
   ],
   "fabrics": [
     {
       "key": "linen",
       "nameAr": "كتان",
-      "nameEn": "Linen"
+      "nameEn": "Linen",
+      "isActive": true
     }
   ],
   "fits": [
     {
       "key": "Relaxed",
-      "nameEn": "Relaxed"
+      "nameAr": "واسع",
+      "nameEn": "Relaxed",
+      "isActive": true
     }
   ],
   "measurementGroups": {
@@ -488,12 +545,22 @@ Returns the styles, garment types, fabrics, fits and measurement fields used by 
     "XXL",
     "3XL",
     "FreeSize"
-  ]
+  ],
+  "extras": [
+    {
+      "key": "embroidery",
+      "nameAr": "تطريز",
+      "nameEn": "Embroidery",
+      "price": 300
+    }
+  ],
+  "liningPrice": 150
 }
 ```
 
 **Rules**
 - Seeded from the old demo: 6 garment types, 12 styles and about 45 fields.
+- Only active items are returned (isActive is always true here); extras and liningPrice let the form show prices next to each option.
 
 ### #13 `POST /api/tailoring/estimate`
 
@@ -508,6 +575,7 @@ Instant price estimate from the price rules while the customer fills in the form
   "styleId": "abaya",
   "garment": "dress",
   "fabric": "crepe",
+  "fit": "Relaxed",
   "lining": true,
   "sizingMode": "StandardSize",
   "standardSize": "XL",
@@ -524,36 +592,50 @@ Instant price estimate from the price rules while the customer fills in the form
   "basePrice": 1400,
   "items": [
     {
-      "label": "Crepe fabric",
+      "key": "fabric",
+      "labelAr": "القماش",
+      "labelEn": "Fabric",
       "amount": 250
     },
     {
-      "label": "Lining",
+      "key": "lining",
+      "labelAr": "البطانة",
+      "labelEn": "Lining",
       "amount": 150
     },
     {
-      "label": "Size XL+",
+      "key": "size",
+      "labelAr": "مقاس كبير",
+      "labelEn": "Size XL",
       "amount": 100
     },
     {
-      "label": "Embroidery",
+      "key": "embroidery",
+      "labelAr": "تطريز",
+      "labelEn": "Embroidery",
       "amount": 300
     }
   ],
   "estimatedPrice": 2200,
   "currency": "EGP",
-  "note": "Final price is confirmed by the owner."
+  "noteAr": "السعر النهائي يؤكده المحل.",
+  "noteEn": "The final price is confirmed by the shop."
 }
 ```
 
 **Rules**
 - Calculated on the server from the active price rules; the same function prices the request in POST /api/tailoring/requests.
+- styleId is optional; garment, fabric and fit are required and must exist in the active catalog.
+- Base price = the style's price if it has one, otherwise the garment's base price.
+
+**Errors**
+- 400 VALIDATION_FAILED
 
 ### #14 `POST /api/tailoring/requests`
 
 Submits a tailoring request with an optional reference photo.
 
-- **Access:** Public · 10 per 10 min per IP · **Day 4**
+- **Access:** Public · 10 per 10 min per IP (shared with #10) · **Day 4**
 - **Headers:** Idempotency-Key: <uuid> · Content-Type: multipart/form-data
 - **Form data:** data (JSON string, below) · referenceImage (file, optional: jpeg/png/webp, max 5 MB)
 
@@ -611,14 +693,14 @@ Submits a tailoring request with an optional reference photo.
 
 **Errors**
 - 400 VALIDATION_FAILED
-- 413 file too large
-- 415 unsupported file type
+- 413 FILE_TOO_LARGE
+- 415 UNSUPPORTED_FILE_TYPE
 
 ### #15 `POST /api/orders/{number}/quote/approve`
 
 The customer accepts the price adjusted by the owner from the secure link.
 
-- **Access:** Tracking token · **Day 4**
+- **Access:** Tracking token · 30/min · **Day 4**
 - **Headers:** X-Tracking-Token: <token>
 
 **Response 200 OK — public order view with status QuoteApproved; the owner is emailed**
@@ -631,7 +713,7 @@ The customer accepts the price adjusted by the owner from the secure link.
 
 The customer declines the quote. The order becomes Cancelled.
 
-- **Access:** Tracking token · **Day 4**
+- **Access:** Tracking token · 30/min · **Day 4**
 - **Headers:** X-Tracking-Token: <token>
 
 **Payload**
@@ -719,7 +801,7 @@ _Access: Owner._
 Paged product table for the dashboard.
 
 - **Access:** Owner · **Day 2**
-- **Query:** `?categoryId=&q=&isVisible=&lowStock=true&sort=&page=1`
+- **Query:** `?categoryId=&q=&isVisible=&lowStock=true&sort=&page=1&pageSize=20`
 
 **Response 200 OK**
 
@@ -729,8 +811,11 @@ Paged product table for the dashboard.
     {
       "id": 12,
       "slug": "modest-abaya",
+      "nameAr": "عباية محتشمة",
       "nameEn": "Modest Abaya",
-      "categoryName": "Dresses",
+      "categoryId": 3,
+      "categoryNameAr": "فساتين",
+      "categoryNameEn": "Dresses",
       "basePrice": 1250,
       "totalStock": 9,
       "variantCount": 6,
@@ -780,7 +865,8 @@ Creates a product, optionally with its first variants.
       "size": "M",
       "colorId": 3,
       "stock": 4,
-      "priceOverride": null
+      "priceOverride": null,
+      "sku": null
     }
   ]
 }
@@ -909,8 +995,9 @@ Uploads a product photo.
 - The first uploaded photo is the main photo; deleting it promotes the next one.
 
 **Errors**
-- 413 too large
-- 415 unsupported type
+- 413 FILE_TOO_LARGE
+- 415 UNSUPPORTED_FILE_TYPE
+- 400 VALIDATION_FAILED when the product already has 10 images
 
 ### #30 `DELETE /api/admin/images/{id}`
 
@@ -996,7 +1083,7 @@ _Access: Owner. Covers both ready-made and custom orders._
 Paged order board with filters.
 
 - **Access:** Owner · **Day 3**
-- **Query:** `?status=PendingConfirmation&status=Confirmed&type=Ready|Custom&q={number|phone|name}&from=&to=&page=1`
+- **Query:** `?status=PendingConfirmation&status=Confirmed&type=Ready|Custom&q={number|phone|name}&from=&to=&page=1&pageSize=20`
 
 **Response 200 OK**
 
@@ -1010,7 +1097,8 @@ Paged order board with filters.
       "status": "PendingConfirmation",
       "customerName": "Mona Ahmed",
       "phone": "+201012345678",
-      "zoneName": "Cairo",
+      "zoneNameAr": "القاهرة",
+      "zoneNameEn": "Cairo",
       "total": 1765,
       "paymentStatus": "Unpaid",
       "createdAt": "…",
@@ -1188,7 +1276,13 @@ Current price rules: base price per style, fabric extras, lining, size and extra
 
 ```json
 {
-  "styles": [
+  "garmentBasePrices": [
+    {
+      "garment": "dress",
+      "basePrice": 1200
+    }
+  ],
+  "styleBasePrices": [
     {
       "styleId": "abaya",
       "basePrice": 1400
@@ -1196,11 +1290,11 @@ Current price rules: base price per style, fabric extras, lining, size and extra
   ],
   "fabrics": [
     {
-      "key": "crepe",
+      "fabric": "crepe",
       "extra": 250
     }
   ],
-  "lining": 150,
+  "liningPrice": 150,
   "sizeExtras": [
     {
       "fromSize": "XL",
@@ -1218,16 +1312,20 @@ Current price rules: base price per style, fabric extras, lining, size and extra
 }
 ```
 
+**Rules**
+- Base price = the style's price when it has one in styleBasePrices, otherwise the garment's price in garmentBasePrices.
+
 ### #46 `PUT /api/admin/tailoring/pricing`
 
-Saves the price rules. New estimates use them immediately.
+Saves the price rules (same body as the GET response). New estimates use them immediately.
 
 - **Access:** Owner · **Day 4**
 
-**Response 200 OK**
+**Response 200 OK — the saved rules**
 
 **Rules**
-- All amounts ≥ 0. Every style in the tailoring catalog must have a base price.
+- All amounts ≥ 0. Every garment in the tailoring catalog must have a base price; style prices are optional overrides.
+- Garment, style and fabric keys must be unique.
 - Existing orders keep the price they were given.
 
 
@@ -1248,6 +1346,7 @@ Home screen numbers for the admin panel.
   "ordersToday": 7,
   "pendingConfirmation": 3,
   "awaitingQuote": 2,
+  "waitingForCustomer": 1,
   "inProduction": 4,
   "readyToShip": 5,
   "deliveredRevenueLast30Days": 48250,
@@ -1255,7 +1354,9 @@ Home screen numbers for the admin panel.
     {
       "variantId": 501,
       "sku": "ZF-12-M-beige",
+      "productNameAr": "عباية محتشمة",
       "productNameEn": "Modest Abaya",
+      "size": "M",
       "stock": 1
     }
   ],
@@ -1264,6 +1365,9 @@ Home screen numbers for the admin panel.
   ]
 }
 ```
+
+**Rules**
+- waitingForCustomer = Custom orders in QuoteSent (the customer hasn't approved the new price yet).
 
 
 ---
@@ -1309,13 +1413,14 @@ Cancel:  from PendingConfirmation, Confirmed, AwaitingQuote, QuoteSent, QuoteApp
 | 400 | `IDEMPOTENCY_KEY_REQUIRED` | `POST /api/orders` or a tailoring request without an `Idempotency-Key` header |
 | 409 | `REQUEST_IN_PROGRESS` | The same `Idempotency-Key` is still being processed |
 | 422 | `IDEMPOTENCY_KEY_REUSED` | The `Idempotency-Key` was already used for a different request |
-| 401 | `INVALID_CREDENTIALS` / — | Wrong login, or not signed in |
-| 404 | — | Not found, or wrong tracking token |
+| 401 | `INVALID_CREDENTIALS` / — | Wrong login (ProblemDetails), or not signed in (empty body) |
+| 404 | `NOT_FOUND` | Not found, or wrong tracking token (never says which) |
 | 409 | `OUT_OF_STOCK` · `PRICE_CHANGED` · `INVALID_STATUS_TRANSITION` · `CONCURRENCY_CONFLICT` · `IN_USE` · `DUPLICATE` | Business conflicts |
-| 413 / 415 | — | Upload too large / wrong type |
+| 413 | `FILE_TOO_LARGE` | Photo over 5 MB or 40 megapixels |
+| 415 | `UNSUPPORTED_FILE_TYPE` | Not a real JPEG, PNG or WebP (checked by the file bytes) |
 | 422 | `QUOTE_EXPIRED` | Approval after `quoteValidUntil` |
 | 423 | `LOCKED_OUT` | 5 failed logins |
-| 429 | — | Rate limited (`Retry-After`) |
+| 429 | — | Rate limited; empty body, read `Retry-After` (seconds) |
 | 500 | — | Unexpected; only `traceId` returned |
 
 ## Appendix C — Endpoint index
