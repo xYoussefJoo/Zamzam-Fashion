@@ -24,6 +24,7 @@ public sealed class OrdersController : ApiControllerBase
     [HttpPost("orders")]
     [Idempotent]
     [EnableRateLimiting(RateLimitPolicies.PlaceOrder)]
+    [ProducesResponseType<PlacedOrderDto>(StatusCodes.Status201Created)]
     public async Task<IActionResult> PlaceOrder(PlaceOrderCommand command, [FromServices] PlaceOrderHandler handler, CancellationToken ct)
     {
         var placed = await handler.HandleAsync(command, ct);

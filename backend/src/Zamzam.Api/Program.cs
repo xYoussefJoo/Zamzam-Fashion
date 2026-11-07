@@ -25,7 +25,14 @@ builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services
     .AddControllers(options => options.Filters.Add<ValidationFilter>())
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddOpenApi();
+// OpenAPI reads these JSON options, not the MVC ones above. Without them openapi.json shows enums as numbers
+// and every number as "integer or string", which gives the generated TypeScript types the wrong shape.
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+});
+builder.Services.AddOpenApi(options => options.AddOperationTransformer<IdempotencyHeaderTransformer>());
 
 // Errors: every failure becomes ProblemDetails. A 400 without its own code is a validation error.
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>

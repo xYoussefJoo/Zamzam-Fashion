@@ -35,6 +35,7 @@ public sealed class TailoringController : ApiControllerBase
     [EnableRateLimiting(RateLimitPolicies.PlaceOrder)]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(6 * 1024 * 1024)]
+    [ProducesResponseType<PlacedTailoringRequestDto>(StatusCodes.Status201Created)]
     public async Task<IActionResult> PlaceRequest([FromForm] string data, IFormFile? referenceImage,
         [FromServices] IValidator<TailoringRequestCommand> validator, [FromServices] IOptions<JsonOptions> json,
         [FromServices] PlaceTailoringRequestHandler handler, CancellationToken ct)

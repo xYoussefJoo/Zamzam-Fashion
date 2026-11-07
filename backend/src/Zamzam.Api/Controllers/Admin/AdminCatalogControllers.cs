@@ -20,6 +20,7 @@ public sealed class AdminCategoriesController : ApiControllerBase
 
     // #18
     [HttpPost]
+    [ProducesResponseType<AdminCategoryNode>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(SaveCategoryCommand command, [FromServices] CreateCategoryHandler handler, CancellationToken ct)
     {
         var created = await handler.HandleAsync(command, ct);
@@ -33,6 +34,7 @@ public sealed class AdminCategoriesController : ApiControllerBase
 
     // #20
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, [FromServices] DeleteCategoryHandler handler, CancellationToken ct)
     {
         await handler.HandleAsync(id, ct);
@@ -56,6 +58,7 @@ public sealed class AdminProductsController : ApiControllerBase
 
     // #23
     [HttpPost]
+    [ProducesResponseType<AdminProductDetail>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(CreateProductCommand command, [FromServices] CreateProductHandler handler, CancellationToken ct)
     {
         var created = await handler.HandleAsync(command, ct);
@@ -69,6 +72,7 @@ public sealed class AdminProductsController : ApiControllerBase
 
     // #25 — soft delete when the product was ever ordered
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, [FromServices] DeleteProductHandler handler, CancellationToken ct)
     {
         await handler.HandleAsync(id, ct);
@@ -77,6 +81,7 @@ public sealed class AdminProductsController : ApiControllerBase
 
     // #26
     [HttpPost("{id:int}/variants")]
+    [ProducesResponseType<AdminVariantDto>(StatusCodes.Status201Created)]
     public async Task<IActionResult> AddVariant(int id, NewVariant command, [FromServices] AddVariantHandler handler, CancellationToken ct)
     {
         var created = await handler.HandleAsync(id, command, ct);
@@ -87,6 +92,7 @@ public sealed class AdminProductsController : ApiControllerBase
     [HttpPost("{id:int}/images")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(6 * 1024 * 1024)]
+    [ProducesResponseType<ImageDto>(StatusCodes.Status201Created)]
     public async Task<IActionResult> UploadImage(int id, IFormFile file, [FromForm] string? altAr, [FromForm] string? altEn,
         [FromServices] UploadProductImageHandler handler, CancellationToken ct)
     {
@@ -107,6 +113,7 @@ public sealed class AdminVariantsController : ApiControllerBase
 
     // #28
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, [FromServices] DeleteVariantHandler handler, CancellationToken ct)
     {
         await handler.HandleAsync(id, ct);
@@ -120,6 +127,7 @@ public sealed class AdminImagesController : ApiControllerBase
 {
     // #30
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, [FromServices] DeleteProductImageHandler handler, CancellationToken ct)
     {
         await handler.HandleAsync(id, ct);
@@ -138,6 +146,7 @@ public sealed class AdminColorsController : ApiControllerBase
 
     // #32
     [HttpPost]
+    [ProducesResponseType<AdminColorDto>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(SaveColorCommand command, [FromServices] CreateColorHandler handler, CancellationToken ct)
     {
         var created = await handler.HandleAsync(command, ct);
@@ -151,6 +160,7 @@ public sealed class AdminColorsController : ApiControllerBase
 
     // #34
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, [FromServices] DeleteColorHandler handler, CancellationToken ct)
     {
         await handler.HandleAsync(id, ct);
