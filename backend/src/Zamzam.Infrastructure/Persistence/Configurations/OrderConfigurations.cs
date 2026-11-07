@@ -83,6 +83,7 @@ internal sealed class TailoringSpecConfiguration : IEntityTypeConfiguration<Tail
         builder.Property(t => t.StandardSize).HasMaxLength(10);
         builder.Property(t => t.ReferenceImageKey).HasMaxLength(300);
         builder.Property(t => t.QuoteNote).HasMaxLength(500);
+        builder.Property(t => t.Notes).HasMaxLength(1000);
 
         builder.Property(t => t.Measurements).HasJsonConversion(); // { "waist": 72, "hips": 98 }
         builder.Property(t => t.Extras).HasJsonConversion();       // [ "embroidery" ]

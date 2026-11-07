@@ -6,6 +6,7 @@
     <Project Path="src/Zamzam.Infrastructure/Zamzam.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Zamzam.IntegrationTests/Zamzam.IntegrationTests.csproj" />
     <Project Path="tests/Zamzam.Tests/Zamzam.Tests.csproj" />
   </Folder>
 </Solution>

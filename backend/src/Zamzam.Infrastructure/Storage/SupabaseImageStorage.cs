@@ -17,35 +17,77 @@ public sealed class SupabaseImageStorage(HttpClient http, IOptions<StorageOption
     public string PublicUrl(string objectKey) =>
         $"{_options.BaseUrl}/storage/v1/object/public/{_options.PublicBucket}/{objectKey}";
 
-    public async Task UploadPublicAsync(string objectKey, byte[] content, string contentType, CancellationToken cancellationToken)
+    // File names are unique, so public photos may be cached for a year. Private ones are never cached.
+    public Task UploadPublicAsync(string objectKey, byte[] content, string contentType, CancellationToken cancellationToken) =>
+        UploadAsync(_options.PublicBucket, objectKey, content, contentType, "max-age=31536000", cancellationToken);
+
+    public Task DeletePublicAsync(IReadOnlyCollection<string> objectKeys, CancellationToken cancellationToken) =>
+        DeleteAsync(_options.PublicBucket, objectKeys, cancellationToken);
+
+    public Task UploadPrivateAsync(string objectKey, byte[] content, string contentType, CancellationToken cancellationToken) =>
+        UploadAsync(_options.PrivateBucket, objectKey, content, contentType, "no-store", cancellationToken);
+
+    public Task DeletePrivateAsync(IReadOnlyCollection<string> objectKeys, CancellationToken cancellationToken) =>
+        DeleteAsync(_options.PrivateBucket, objectKeys, cancellationToken);
+
+    // A link that works for a short time only, e.g. 10 minutes for the owner to look at a customer's photo.
+    public async Task<string> SignedPrivateUrlAsync(string objectKey, TimeSpan validFor, CancellationToken cancellationToken)
     {
         EnsureConfigured();
         using var request = new HttpRequestMessage(HttpMethod.Post,
-            $"{_options.BaseUrl}/storage/v1/object/{_options.PublicBucket}/{objectKey}")
+            $"{_options.BaseUrl}/storage/v1/object/sign/{_options.PrivateBucket}/{objectKey}")
+        {
+            Content = JsonContent.Create(new { expiresIn = (int)validFor.TotalSeconds }),
+        };
+        Authorize(request);
+
+        using var response = await http.SendAsync(request, cancellationToken);
+        await EnsureSuccessAsync(response, $"sign {objectKey}", cancellationToken);
+        var signed = await response.Content.ReadFromJsonAsync<SignedUrlResponse>(cancellationToken)
+            ?? throw new InvalidOperationException("Storage returned no signed URL.");
+        return $"{_options.BaseUrl}/storage/v1{signed.SignedURL}";
+    }
+
+    private sealed record SignedUrlResponse(string SignedURL);
+
+    private async Task UploadAsync(string bucket, string objectKey, byte[] content, string contentType, string cacheControl, CancellationToken ct)
+    {
+        EnsureConfigured();
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{_options.BaseUrl}/storage/v1/object/{bucket}/{objectKey}")
         {
             Content = new ByteArrayContent(content),
         };
         request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
         request.Headers.Add("x-upsert", "true");
-        request.Headers.Add("cache-control", "max-age=31536000"); // file names are unique, so browsers may cache for a year
+        request.Headers.Add("cache-control", cacheControl);
         Authorize(request);
 
-        using var response = await http.SendAsync(request, cancellationToken);
-        await EnsureSuccessAsync(response, $"upload {objectKey}", cancellationToken);
+        using var response = await http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, $"upload {objectKey}", ct);
     }
 
-    public async Task DeletePublicAsync(IReadOnlyCollection<string> objectKeys, CancellationToken cancellationToken)
+    private async Task DeleteAsync(string bucket, IReadOnlyCollection<string> objectKeys, CancellationToken ct)
     {
         if (objectKeys.Count == 0) return;
         EnsureConfigured();
-        using var request = new HttpRequestMessage(HttpMethod.Delete, $"{_options.BaseUrl}/storage/v1/object/{_options.PublicBucket}")
+        using var request = new HttpRequestMessage(HttpMethod.Delete, $"{_options.BaseUrl}/storage/v1/object/{bucket}")
         {
             Content = JsonContent.Create(new { prefixes = objectKeys }),
         };
         Authorize(request);
 
-        using var response = await http.SendAsync(request, cancellationToken);
-        await EnsureSuccessAsync(response, $"delete {objectKeys.Count} files", cancellationToken);
+        using var response = await http.SendAsync(request, ct);
+        await EnsureSuccessAsync(response, $"delete {objectKeys.Count} files", ct);
+    }
+
+    // Used by /health: can we reach storage with our key?
+    public async Task<bool> IsReachableAsync(CancellationToken ct)
+    {
+        if (!_options.IsConfigured) return false;
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{_options.BaseUrl}/storage/v1/bucket/{_options.PublicBucket}");
+        Authorize(request);
+        using var response = await http.SendAsync(request, ct);
+        return response.IsSuccessStatusCode;
     }
 
     // Creates the two buckets if they don't exist yet. Called once at startup.

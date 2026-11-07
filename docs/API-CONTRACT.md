@@ -1306,6 +1306,9 @@ Cancel:  from PendingConfirmation, Confirmed, AwaitingQuote, QuoteSent, QuoteApp
 |---|---|---|
 | 400 | `VALIDATION_FAILED` | A field failed validation; see `errors{}` |
 | 400 | `MISSING_CSRF_HEADER` | Admin mutation without `X-Requested-With` |
+| 400 | `IDEMPOTENCY_KEY_REQUIRED` | `POST /api/orders` or a tailoring request without an `Idempotency-Key` header |
+| 409 | `REQUEST_IN_PROGRESS` | The same `Idempotency-Key` is still being processed |
+| 422 | `IDEMPOTENCY_KEY_REUSED` | The `Idempotency-Key` was already used for a different request |
 | 401 | `INVALID_CREDENTIALS` / — | Wrong login, or not signed in |
 | 404 | — | Not found, or wrong tracking token |
 | 409 | `OUT_OF_STOCK` · `PRICE_CHANGED` · `INVALID_STATUS_TRANSITION` · `CONCURRENCY_CONFLICT` · `IN_USE` · `DUPLICATE` | Business conflicts |

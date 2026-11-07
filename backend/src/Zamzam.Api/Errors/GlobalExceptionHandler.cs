@@ -19,6 +19,7 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
         {
             DomainException e => (StatusFor(e.Code), e.Code, TitleFor(e.Code), e.Message),
             NotFoundException e => (StatusCodes.Status404NotFound, ErrorCodes.NotFound, "Not found", e.Message),
+            ConflictException e => (StatusCodes.Status409Conflict, e.Code, TitleFor(e.Code), e.Message),
             FileRejectedException e => (e.StatusCode, e.Code, "File refused", e.Message),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, ErrorCodes.ConcurrencyConflict,
                 "Changed by someone else", "This item was changed by someone else. Reload it and try again."),
@@ -42,6 +43,8 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
             Type = $"https://zamzam.app/errors/{(code ?? "server-error").ToLowerInvariant().Replace('_', '-')}",
         };
         if (code is not null) problem.Extensions["code"] = code;
+        if (exception is ConflictException conflict)
+            foreach (var (key, value) in conflict.Details) problem.Extensions[key] = value; // e.g. items, total
 
         return await problemDetails.TryWriteAsync(new ProblemDetailsContext
         {

@@ -20,7 +20,7 @@ function Call([string]$method, [string]$path, $body = $null, [string]$file = $nu
     if ($file) { $curlArgs += @('-F', "file=@$file;type=image/png", '-F', 'altEn=Smoke test photo') }
     if ($null -ne $body) {
         $bodyFile = Join-Path $tmp 'body.json'
-        [IO.File]::WriteAllText($bodyFile, ($body | ConvertTo-Json -Depth 6 -Compress), [Text.UTF8Encoding]::new($false))
+        [IO.File]::WriteAllText($bodyFile, (ConvertTo-Json -InputObject $body -Depth 6 -Compress), [Text.UTF8Encoding]::new($false))
         $curlArgs += @('-H', 'Content-Type: application/json', '--data-binary', "@$bodyFile")
     }
     $out = (& curl.exe @curlArgs) -join "`n"
@@ -126,6 +126,105 @@ try {
     Check '#20 delete empty category' ($r.Status -eq 204) "($($r.Status))"
     $r = Call DELETE "/api/admin/colors/$colorId"
     Check '#34 delete unused color' ($r.Status -eq 204) "($($r.Status))"
+
+    # ---------- Day 3: orders (#9-11, #35-37, #41-42) on a demo product
+    $r = Call GET '/api/delivery-zones'
+    Check '#9 public delivery zones' ($r.Status -eq 200 -and $r.Json.Count -ge 1) "($($r.Json.Count) active)"
+    $zone = $r.Json[0]
+
+    $r = Call GET '/api/admin/delivery-zones'
+    Check '#41 admin delivery zones' ($r.Status -eq 200 -and $r.Json.Count -eq 27) "($($r.Json.Count))"
+    $z = $r.Json | Where-Object { $_.id -eq $zone.id }
+    $r = Call PUT '/api/admin/delivery-zones' @(@{ id = $z.id; fee = $z.fee; etaDaysMin = $z.etaDaysMin; etaDaysMax = $z.etaDaysMax; isActive = $true })
+    Check '#42 update delivery zones' ($r.Status -eq 200) "($($r.Status))"
+
+    $r = Call GET '/api/products/classic-blouse'
+    $v = $r.Json.variants | Where-Object { $_.inStock } | Select-Object -First 1
+    $stockBefore = if ($v.stock -ne $null) { $v.stock } else { 'more than 5' }
+    $order = @{
+        customer = @{ name = 'Smoke Test Buyer'; phone = '01112345678'; email = $null; deliveryZoneId = $zone.id
+                      city = 'Nasr City'; address = '12 Abbas El Akkad St, apt 7'; notes = 'automated smoke test' }
+        lines = @(@{ variantId = $v.id; qty = 1 }); paymentMethod = 'CashOnDelivery'
+        expectedTotal = [decimal]$v.price + [decimal]$zone.fee; acceptTerms = $true
+    }
+    $curlKey = "smoke-$([guid]::NewGuid().ToString('N'))"
+    $saved = $csrf; $script:csrf = "Idempotency-Key: $curlKey"
+    $r = Call POST '/api/orders' $order
+    $script:csrf = $saved
+    Check '#10 place an order' ($r.Status -eq 201) "($($r.Json.number), total $($r.Json.total))"
+    $number = $r.Json.number; $token = $r.Json.trackingToken
+
+    $track = & curl.exe -s "$api/api/orders/$number" -H "X-Tracking-Token: $token" | ConvertFrom-Json
+    Check '#11 customer tracking (masked)' ($track.customer.name -eq 'Smoke T.') "($($track.customer.name), $($track.customer.phone))"
+
+    $r = Call GET "/api/admin/orders?q=$number"
+    Check '#35 order board finds it' ($r.Status -eq 200 -and $r.Json.totalCount -eq 1)
+    $orderId = $r.Json.items[0].id
+
+    $r = Call GET "/api/admin/orders/$orderId"
+    Check '#36 order details (unmasked)' ($r.Status -eq 200 -and $r.Json.customer.phone -eq '+201112345678')
+
+    $r = Call POST "/api/admin/orders/$orderId/status" @{ to = 'Shipped'; note = $null }
+    Check '#37 skipping steps refused' ($r.Status -eq 409 -and $r.Json.code -eq 'INVALID_STATUS_TRANSITION')
+    $r = Call POST "/api/admin/orders/$orderId/status" @{ to = 'Confirmed'; note = 'Confirmed by phone (smoke test)' }
+    Check '#37 confirm' ($r.Status -eq 200 -and $r.Json.status -eq 'Confirmed') "(by $($r.Json.history[-1].changedBy))"
+    $r = Call POST "/api/admin/orders/$orderId/status" @{ to = 'Cancelled'; note = 'Smoke test clean-up' }
+    Check '#37 cancel' ($r.Status -eq 200 -and $r.Json.status -eq 'Cancelled')
+
+    $after = (Call GET '/api/products/classic-blouse').Json.variants | Where-Object { $_.id -eq $v.id }
+    $stockAfter = if ($after.stock -ne $null) { $after.stock } else { 'more than 5' }
+    Check 'cancel put the stock back' ("$stockAfter" -eq "$stockBefore") "(before $stockBefore, after $stockAfter)"
+
+    # ---------- Day 4: custom tailoring (#12-15, #38) + settings (#39-40, #43-47)
+    $catalog = (Call GET '/api/tailoring/catalog').Json
+    Check '#12 tailoring catalog' ($catalog.garments.Count -gt 0 -and $catalog.liningPrice -ge 0) "($($catalog.garments.Count) garments)"
+    $r = Call POST '/api/tailoring/estimate' @{ styleId = 'maxi'; garment = 'dress'; fabric = 'crepe'; fit = 'Relaxed'
+        lining = $true; sizingMode = 'StandardSize'; standardSize = 'M'; extras = @('embroidery') }
+    Check '#13 estimate' ($r.Status -eq 200 -and $r.Json.estimatedPrice -gt 0) "($($r.Json.estimatedPrice) EGP)"
+
+    $zoneId = (Call GET '/api/delivery-zones').Json[0].id
+    $dataFile = Join-Path $tmp 'request.json'
+    $request = @{
+        customer = @{ name = 'Smoke Tailor'; phone = '01112345678'; email = $null; deliveryZoneId = $zoneId
+            city = 'Nasr City'; address = '1 Smoke Test Street, apt 1'; notes = $null }
+        styleId = 'maxi'; garment = 'dress'; fabric = 'crepe'; color = 'Navy'; fit = 'Relaxed'
+        sizingMode = 'Measurements'; standardSize = $null; measurements = @{ bust = 92; waist = 74; dressLength = 140 }
+        lining = $true; extras = @('embroidery'); notes = 'Smoke test - please ignore'; acceptTerms = $true
+    }
+    [IO.File]::WriteAllText($dataFile, ($request | ConvertTo-Json -Depth 6 -Compress), [Text.UTF8Encoding]::new($false))
+    # The PNG from the photo test above doubles as the reference photo.
+    $placed = & curl.exe -s -X POST "$api/api/tailoring/requests" -H "Idempotency-Key: smoke-$([guid]::NewGuid())" `
+        -F "data=<$dataFile;type=application/json" -F "referenceImage=@$png;type=image/png" | ConvertFrom-Json
+    Check '#14 tailoring request (with photo)' ($placed.status -eq 'AwaitingQuote') "($($placed.number), estimate $($placed.estimatedPrice))"
+
+    $customId = (Call GET "/api/admin/orders?q=$($placed.number)").Json.items[0].id
+    $r = Call GET "/api/admin/orders/$customId"
+    Check '#36 notes + private photo link' ($r.Json.tailoring.notes -like 'Smoke*' -and $r.Json.tailoring.referenceImageUrl -match '/object/sign/')
+
+    $r = Call POST "/api/admin/orders/$customId/quote" @{ price = $placed.estimatedPrice + 250; note = 'Smoke test price'; validDays = 3 }
+    Check '#38 new price -> QuoteSent + one-time link' ($r.Status -eq 200 -and $r.Json.order.status -eq 'QuoteSent' -and $r.Json.customerLink)
+    $newToken = ([regex]::Match("$($r.Json.customerLink)", '[?&]t=([^&]+)')).Groups[1].Value
+
+    $old = & curl.exe -s -o NUL -w '%{http_code}' -X POST "$api/api/orders/$($placed.number)/quote/approve" -H "X-Tracking-Token: $($placed.trackingToken)"
+    Check 'old link stops working' ($old -eq '404') "($old)"
+    $answer = & curl.exe -s -X POST "$api/api/orders/$($placed.number)/quote/approve" -H "X-Tracking-Token: $newToken" | ConvertFrom-Json
+    Check '#15 customer approves' ($answer.status -eq 'QuoteApproved')
+
+    $r = Call GET '/api/admin/dashboard'
+    Check '#47 dashboard' ($r.Status -eq 200 -and $null -ne $r.Json.latestOrders) "(today $($r.Json.ordersToday), low stock $($r.Json.lowStock.Count))"
+    $r = Call POST "/api/admin/orders/$customId/status" @{ to = 'Cancelled'; note = 'Smoke test clean-up' }
+    Check 'custom order cleaned up' ($r.Status -eq 200 -and $r.Json.status -eq 'Cancelled')
+
+    # Read + write back the same settings: proves the PUTs work without changing anything.
+    $r = Call GET '/api/admin/tailoring/catalog'
+    $r2 = Call PUT '/api/admin/tailoring/catalog' $r.Json
+    Check '#39/#40 tailoring catalog' ($r.Status -eq 200 -and $r2.Status -eq 200) "($($r2.Status))"
+    $r = Call GET '/api/admin/tailoring/pricing'
+    $r2 = Call PUT '/api/admin/tailoring/pricing' $r.Json
+    Check '#45/#46 price rules' ($r.Status -eq 200 -and $r2.Status -eq 200) "($($r2.Status))"
+    $r = Call GET '/api/admin/site-settings'
+    $r2 = Call PUT '/api/admin/site-settings' $r.Json
+    Check '#43/#44 site settings' ($r.Status -eq 200 -and $r2.Status -eq 200) "($($r2.Status))"
 
     # ---------- logout (#2)
     $r = Call POST '/api/auth/logout'

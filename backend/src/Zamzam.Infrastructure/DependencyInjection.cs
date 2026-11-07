@@ -3,9 +3,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Zamzam.Infrastructure.Health;
 using Zamzam.Application.Common;
+using Zamzam.Application.Orders;
+using Zamzam.Infrastructure.Email;
 using Zamzam.Infrastructure.Identity;
+using Zamzam.Infrastructure.Orders;
 using Zamzam.Infrastructure.Persistence;
 using Zamzam.Infrastructure.Storage;
 
@@ -15,7 +22,8 @@ public static class DependencyInjection
 {
     public const string AuthCookieName = "zz.auth";
 
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration,
+        IHostEnvironment environment)
     {
         var connectionString = configuration.GetConnectionString("Zamzam")
             ?? throw new InvalidOperationException(
@@ -34,13 +42,25 @@ public static class DependencyInjection
         services.AddScoped<IImageStorage>(provider => provider.GetRequiredService<SupabaseImageStorage>());
         services.AddSingleton<IImageProcessor, SkiaImageProcessor>();
 
-        services.AddOwnerIdentity();
+        services.AddScoped<IOrderNumberGenerator, OrderNumberGenerator>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddSingleton<ISiteLinks, SiteLinks>();
+        services.AddSingleton<EmailQueue>();
+        services.AddSingleton<IEmailQueue>(provider => provider.GetRequiredService<EmailQueue>());
+        services.AddSingleton<IEmailSender, LogOnlyEmailSender>(); // Day 4: a real provider at deploy
+        services.AddHostedService<EmailBackgroundService>();
+
+        services.AddHealthChecks()
+            .AddCheck<DatabaseHealthCheck>(HealthCheckNames.Database)
+            .AddCheck<StorageHealthCheck>(HealthCheckNames.Storage);
+
+        services.AddOwnerIdentity(configuration, environment);
         services.AddScoped<DatabaseSeeder>();
 
         return services;
     }
 
-    private static void AddOwnerIdentity(this IServiceCollection services)
+    private static void AddOwnerIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         services
             .AddIdentity<AppUser, IdentityRole>(options =>
@@ -86,8 +106,23 @@ public static class DependencyInjection
         });
 
         // The keys that encrypt the cookie live in the database, so redeploys don't log the owner out.
-        services.AddDataProtection()
+        var dataProtection = services.AddDataProtection()
             .PersistKeysToDbContext<ZamzamDbContext>()
             .SetApplicationName("Zamzam");
+
+        // Someone who reads the database must not be able to forge the owner's cookie, so the keys are encrypted.
+        // Development keeps them plain: the dev database is shared and each PC would encrypt them differently.
+        if (environment.IsDevelopment()) return;
+        if (configuration["DataProtection:CertificateBase64"] is { Length: > 0 } pfx)
+        {
+            // A .pfx in config (MonsterASP env var): works on any server the app moves to.
+            var certificate = X509CertificateLoader.LoadPkcs12(Convert.FromBase64String(pfx), configuration["DataProtection:CertificatePassword"]);
+            dataProtection.ProtectKeysWithCertificate(certificate);
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            // No certificate: Windows DPAPI ties the keys to this server. Moving servers = the owner logs in again.
+            dataProtection.ProtectKeysWithDpapi(protectToLocalMachine: true);
+        }
     }
 }

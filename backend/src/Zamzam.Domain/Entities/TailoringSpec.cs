@@ -25,6 +25,7 @@ public class TailoringSpec : Entity
     public bool HasLining { get; private set; }
     public IReadOnlyList<string> Extras { get; private set; } = [];
     public string? ReferenceImageKey { get; private set; }  // private bucket key, never a public URL
+    public string? Notes { get; private set; }              // the customer's wishes: pockets, sleeve type…
 
     public decimal EstimatedPrice { get; private set; }     // what the calculator showed the customer
     public decimal? QuotedPrice { get; private set; }       // what the owner confirmed or changed
@@ -36,8 +37,9 @@ public class TailoringSpec : Entity
 
     public TailoringSpec(string? styleId, string garment, string fabric, string color, string fit,
         SizingMode sizingMode, string? standardSize, IReadOnlyDictionary<string, decimal>? measurements,
-        bool hasLining, IEnumerable<string>? extras, string? referenceImageKey, decimal estimatedPrice)
+        bool hasLining, IEnumerable<string>? extras, string? referenceImageKey, decimal estimatedPrice, string? notes = null)
     {
+        Notes = Guard.Optional(notes, "Tailoring notes", 1000);
         StyleId = Guard.Optional(styleId, "Style", 50);
         Garment = Guard.Required(garment, "Garment", 50);
         Fabric = Guard.Required(fabric, "Fabric", 50);

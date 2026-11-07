@@ -37,6 +37,6 @@ public sealed class ValidationFilter(IServiceProvider services, ProblemDetailsFa
     }
 
     // "Variants[0].Size" -> "variants[0].size"
-    private static string CamelCase(string path) =>
+    public static string CamelCase(string path) =>
         string.Join('.', path.Split('.').Select(part => part.Length == 0 ? part : char.ToLowerInvariant(part[0]) + part[1..]));
 }
