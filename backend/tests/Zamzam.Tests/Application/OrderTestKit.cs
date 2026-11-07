@@ -48,7 +48,7 @@ internal sealed class OrderTestKit : IDisposable
     public PlaceOrderHandler PlaceOrder() =>
         new(T.Db, new FakeOrderNumbers(), T.Storage, Emails, new FakeSiteLinks(), TimeProvider.System, Log.For<PlaceOrderHandler>());
 
-    public ChangeOrderStatusHandler ChangeStatus() => new(T.Db, new FakeUserDirectory(), Emails, TimeProvider.System);
+    public ChangeOrderStatusHandler ChangeStatus() => new(T.Db, new FakeUserDirectory(), T.Storage, Emails, TimeProvider.System);
 
     public PlaceOrderCommand Command(decimal expectedTotal, params CheckoutLine[] lines) =>
         new(new CheckoutCustomer("Mona Ahmed", "0101 234 5678", "mona@example.com", Cairo.Id, "Nasr City",

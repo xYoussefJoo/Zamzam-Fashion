@@ -13,16 +13,7 @@ public sealed class UploadProductImageHandler(IAppDbContext db, IImageStorage st
 {
     public async Task<ImageDto> HandleAsync(UploadProductImageCommand command, CancellationToken ct)
     {
-        if (command.Length > ImageSizes.MaxUploadBytes)
-            throw new FileRejectedException(413, FileRejectedException.TooLarge, "Photos must be 5 MB or smaller.");
-
-        // Read at most 5 MB + 1 byte, so a lying Content-Length can't make us buffer a huge file.
-        using var buffer = new MemoryStream();
-        await CopyAtMostAsync(command.Content, buffer, ImageSizes.MaxUploadBytes + 1, ct);
-        if (buffer.Length > ImageSizes.MaxUploadBytes)
-            throw new FileRejectedException(413, FileRejectedException.TooLarge, "Photos must be 5 MB or smaller.");
-        if (ImageFileType.Detect(buffer.GetBuffer().AsSpan(0, (int)Math.Min(16, buffer.Length))) is null)
-            throw new FileRejectedException(415, FileRejectedException.UnsupportedType, "Upload a JPG, PNG or WebP photo.");
+        using var buffer = await PhotoUpload.ReadCheckedAsync(command.Content, command.Length, ct);
 
         var product = await db.Products.Include(p => p.Images)
             .FirstOrDefaultAsync(p => p.Id == command.ProductId && !p.IsDeleted, ct)
@@ -53,18 +44,6 @@ public sealed class UploadProductImageHandler(IAppDbContext db, IImageStorage st
         }
 
         return storage.ToImageDto(image.Id, image.StorageKey, image.AltAr, image.AltEn, image.SortOrder);
-    }
-
-    private static async Task CopyAtMostAsync(Stream source, Stream target, long limit, CancellationToken ct)
-    {
-        var chunk = new byte[81920];
-        long copied = 0;
-        int read;
-        while (copied < limit && (read = await source.ReadAsync(chunk.AsMemory(0, (int)Math.Min(chunk.Length, limit - copied)), ct)) > 0)
-        {
-            await target.WriteAsync(chunk.AsMemory(0, read), ct);
-            copied += read;
-        }
     }
 }
 

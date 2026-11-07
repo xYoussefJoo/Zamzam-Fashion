@@ -6,6 +6,11 @@ public interface IImageStorage
     string PublicUrl(string objectKey);
     Task UploadPublicAsync(string objectKey, byte[] content, string contentType, CancellationToken cancellationToken);
     Task DeletePublicAsync(IReadOnlyCollection<string> objectKeys, CancellationToken cancellationToken);
+
+    // Private bucket: customers' tailoring photos. Never public; the owner sees them through a short-lived link.
+    Task UploadPrivateAsync(string objectKey, byte[] content, string contentType, CancellationToken cancellationToken);
+    Task DeletePrivateAsync(IReadOnlyCollection<string> objectKeys, CancellationToken cancellationToken);
+    Task<string> SignedPrivateUrlAsync(string objectKey, TimeSpan validFor, CancellationToken cancellationToken);
 }
 
 // Turns an uploaded photo into small WebP files without EXIF data. ImageSharp in the app.
@@ -32,6 +37,37 @@ public static class ImageKeys
 
     public static IReadOnlyList<string> AllFiles(string storageKey) =>
         ImageSizes.Widths.Select(w => ForWidth(storageKey, w)).ToList();
+}
+
+// Reads an uploaded photo safely: at most 5 MB, and it must really be a JPEG, PNG or WebP.
+public static class PhotoUpload
+{
+    public static async Task<MemoryStream> ReadCheckedAsync(Stream content, long declaredLength, CancellationToken ct)
+    {
+        if (declaredLength > ImageSizes.MaxUploadBytes) throw TooLarge();
+
+        // Read at most 5 MB + 1 byte, so a lying Content-Length can't make us buffer a huge file.
+        var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        long copied = 0;
+        int read;
+        while (copied <= ImageSizes.MaxUploadBytes
+               && (read = await content.ReadAsync(chunk.AsMemory(0, (int)Math.Min(chunk.Length, ImageSizes.MaxUploadBytes + 1 - copied)), ct)) > 0)
+        {
+            await buffer.WriteAsync(chunk.AsMemory(0, read), ct);
+            copied += read;
+        }
+
+        if (buffer.Length > ImageSizes.MaxUploadBytes) throw TooLarge();
+        if (ImageFileType.Detect(buffer.GetBuffer().AsSpan(0, (int)Math.Min(16, buffer.Length))) is null)
+            throw new FileRejectedException(415, FileRejectedException.UnsupportedType, "Upload a JPG, PNG or WebP photo.");
+
+        buffer.Position = 0;
+        return buffer;
+    }
+
+    private static FileRejectedException TooLarge() =>
+        new(413, FileRejectedException.TooLarge, "Photos must be 5 MB or smaller.");
 }
 
 // Checks the first bytes of the file (its "magic number"), not the file name or the browser's claim.

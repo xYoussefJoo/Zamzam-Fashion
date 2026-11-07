@@ -60,22 +60,27 @@ public sealed class ListAdminOrdersHandler(IAppDbContext db)
 }
 
 // #36 GET /api/admin/orders/{id} — everything, unmasked, with who changed what.
-public sealed class GetAdminOrderHandler(IAppDbContext db, IUserDirectory users)
+public sealed class GetAdminOrderHandler(IAppDbContext db, IUserDirectory users, IImageStorage storage)
 {
+    public static readonly TimeSpan PhotoLinkLifetime = TimeSpan.FromMinutes(10);
+
     public async Task<AdminOrderDetail> HandleAsync(int id, CancellationToken ct)
     {
         var order = await db.Orders.AsNoTracking()
             .Include(o => o.Lines).Include(o => o.History).Include(o => o.Tailoring)
             .FirstOrDefaultAsync(o => o.Id == id, ct) ?? throw new NotFoundException("Order");
-        return await ToDetailAsync(db, users, order, ct);
+        return await ToDetailAsync(db, users, storage, order, ct);
     }
 
-    internal static async Task<AdminOrderDetail> ToDetailAsync(IAppDbContext db, IUserDirectory users, Order o, CancellationToken ct)
+    internal static async Task<AdminOrderDetail> ToDetailAsync(IAppDbContext db, IUserDirectory users, IImageStorage storage,
+        Order o, CancellationToken ct)
     {
         var zone = await db.DeliveryZones.AsNoTracking().FirstAsync(z => z.Id == o.DeliveryZoneId, ct);
         var names = await users.NamesAsync(o.History.Where(h => h.ChangedByUserId is not null).Select(h => h.ChangedByUserId!).Distinct(), ct);
         var c = o.Customer;
         var t = o.Tailoring;
+        // The customer's photo lives in the private bucket: the owner gets a link that works for 10 minutes.
+        var photoUrl = t?.ReferenceImageKey is { } key ? await storage.SignedPrivateUrlAsync(key, PhotoLinkLifetime, ct) : null;
 
         return new AdminOrderDetail(o.Id, o.Number, o.Type, o.Status, o.CreatedAt,
             new AdminCustomerDto(c.Name, c.Phone, c.Email, c.City, c.Address, c.Notes),
@@ -85,7 +90,7 @@ public sealed class GetAdminOrderHandler(IAppDbContext db, IUserDirectory users)
             o.History.OrderBy(h => h.ChangedAt).ThenBy(h => h.Id).Select(h => new AdminHistoryEvent(h.FromStatus, h.ToStatus, h.ChangedAt, h.Note,
                 h.ChangedByUserId is null ? null : names.GetValueOrDefault(h.ChangedByUserId, "Deleted account"))).ToList(),
             t is null ? null : new AdminTailoringDto(t.StyleId, t.Garment, t.Fabric, t.Color, t.Fit, t.SizingMode, t.StandardSize,
-                t.Measurements, t.HasLining, t.Extras, t.ReferenceImageKey is not null, t.EstimatedPrice, t.QuotedPrice,
+                t.Measurements, t.HasLining, t.Extras, t.Notes, photoUrl, t.EstimatedPrice, t.QuotedPrice,
                 t.QuoteNote, t.QuoteValidUntil, t.QuoteApprovedAt));
     }
 }
@@ -102,7 +107,7 @@ public sealed class ChangeOrderStatusValidator : AbstractValidator<ChangeOrderSt
 }
 
 // #37 POST /api/admin/orders/{id}/status — only the moves in the status machine; cancelling puts stock back.
-public sealed class ChangeOrderStatusHandler(IAppDbContext db, IUserDirectory users, IEmailQueue emails, TimeProvider clock)
+public sealed class ChangeOrderStatusHandler(IAppDbContext db, IUserDirectory users, IImageStorage storage, IEmailQueue emails, TimeProvider clock)
 {
     private const int MaxAttempts = 3;
 
@@ -127,7 +132,7 @@ public sealed class ChangeOrderStatusHandler(IAppDbContext db, IUserDirectory us
 
                 await db.SaveChangesAsync(ct); // order + stock in one save = one transaction
                 OrderEmails.StatusChanged(emails, order);
-                return await GetAdminOrderHandler.ToDetailAsync(db, users, order, ct);
+                return await GetAdminOrderHandler.ToDetailAsync(db, users, storage, order, ct);
             }
             catch (DbUpdateConcurrencyException) when (attempt < MaxAttempts)
             {

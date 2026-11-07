@@ -135,6 +135,10 @@ public class Order : Entity
         }
     }
 
+    // A fresh private link (e.g. to send the new price on WhatsApp). The old link stops working.
+    public void ReplaceTrackingToken(string trackingTokenHash) =>
+        TrackingTokenHash = Guard.Required(trackingTokenHash, "Tracking token hash", 128);
+
     // ---------- customer actions (from the secure tracking link)
 
     public void ApproveQuote(DateTime now)

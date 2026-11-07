@@ -39,8 +39,8 @@ public sealed record AdminHistoryEvent(OrderStatus? From, OrderStatus To, DateTi
 
 public sealed record AdminTailoringDto(string? StyleId, string Garment, string Fabric, string Color, string Fit,
     SizingMode SizingMode, string? StandardSize, IReadOnlyDictionary<string, decimal> Measurements, bool HasLining,
-    IReadOnlyList<string> Extras, bool HasReferenceImage, decimal EstimatedPrice, decimal? QuotedPrice, string? QuoteNote,
-    DateTime? QuoteValidUntil, DateTime? QuoteApprovedAt);
+    IReadOnlyList<string> Extras, string? Notes, string? ReferenceImageUrl, decimal EstimatedPrice, decimal? QuotedPrice,
+    string? QuoteNote, DateTime? QuoteValidUntil, DateTime? QuoteApprovedAt);
 
 public sealed record AdminOrderDetail(int Id, string Number, OrderType Type, OrderStatus Status, DateTime CreatedAt,
     AdminCustomerDto Customer, AdminZoneDto Zone, IReadOnlyList<OrderLineDto> Lines, decimal Subtotal, decimal DeliveryFee,

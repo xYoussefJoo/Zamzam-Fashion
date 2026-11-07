@@ -69,6 +69,9 @@ public sealed class PostgresFixture : IAsyncLifetime
         public string PublicUrl(string objectKey) => objectKey;
         public Task UploadPublicAsync(string objectKey, byte[] content, string contentType, CancellationToken ct) => Task.CompletedTask;
         public Task DeletePublicAsync(IReadOnlyCollection<string> objectKeys, CancellationToken ct) => Task.CompletedTask;
+        public Task UploadPrivateAsync(string objectKey, byte[] content, string contentType, CancellationToken ct) => Task.CompletedTask;
+        public Task DeletePrivateAsync(IReadOnlyCollection<string> objectKeys, CancellationToken ct) => Task.CompletedTask;
+        public Task<string> SignedPrivateUrlAsync(string objectKey, TimeSpan validFor, CancellationToken ct) => Task.FromResult(objectKey);
     }
 
     private sealed class NoEmails : IEmailQueue

@@ -93,6 +93,23 @@ internal sealed class FakeImageStorage : IImageStorage
         foreach (var key in objectKeys) Files.Remove(key);
         return Task.CompletedTask;
     }
+
+    public Dictionary<string, byte[]> PrivateFiles { get; } = new();
+
+    public Task UploadPrivateAsync(string objectKey, byte[] content, string contentType, CancellationToken cancellationToken)
+    {
+        PrivateFiles[objectKey] = content;
+        return Task.CompletedTask;
+    }
+
+    public Task DeletePrivateAsync(IReadOnlyCollection<string> objectKeys, CancellationToken cancellationToken)
+    {
+        foreach (var key in objectKeys) PrivateFiles.Remove(key);
+        return Task.CompletedTask;
+    }
+
+    public Task<string> SignedPrivateUrlAsync(string objectKey, TimeSpan validFor, CancellationToken cancellationToken) =>
+        Task.FromResult($"https://img.test/private/{objectKey}?expires={(int)validFor.TotalSeconds}");
 }
 
 internal sealed class FakeImageProcessor : IImageProcessor
