@@ -13,8 +13,11 @@ using Zamzam.Infrastructure.Health;
 using Zamzam.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+StartupChecks.EnsureServerSettings(builder.Configuration, builder.Environment);
 // Don't tell attackers which server we run (the header is added after the middleware, so turn it off here).
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+// IIS can't always tell the app its https port, so name it (only used outside Development).
+builder.Services.AddHttpsRedirection(options => options.HttpsPort = 443);
 
 builder.Host.UseSerilog((context, config) => config
     .ReadFrom.Configuration(context.Configuration)
@@ -75,7 +78,8 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
-if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
+// On a server, migrations run on purpose (Database__MigrateOnStartup=true for one start), never on every restart.
+if (app.Configuration.GetValue("Database:MigrateOnStartup", app.Environment.IsDevelopment()))
     await app.Services.MigrateAndSeedAsync();
 
 // First: the real client IP (for logs and rate limits) and the security headers (also on errors).
@@ -91,7 +95,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// HTTPS is terminated by Caddy/Cloudflare in production, so no HTTPS redirection here.
+// IIS on MonsterASP serves both http and https: send plain-http callers to https (HSTS keeps them there).
+if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
 app.UseMiddleware<CsrfHeaderMiddleware>();
 app.UseRateLimiter();
 app.UseAuthentication();

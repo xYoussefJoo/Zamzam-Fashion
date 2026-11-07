@@ -14,6 +14,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, IWebHostEnvi
             headers["Cross-Origin-Resource-Policy"] = "same-site";
             // The OpenAPI page in development needs nothing either: it is plain JSON.
             headers.ContentSecurityPolicy = "default-src 'none'; frame-ancestors 'none'";
+            headers["X-Robots-Tag"] = "noindex, nofollow"; // an API is never a search result
             // HTTPS only for a year. Not in development: it would stick to localhost in the browser.
             if (!environment.IsDevelopment()) headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
             headers.Remove("Server");
