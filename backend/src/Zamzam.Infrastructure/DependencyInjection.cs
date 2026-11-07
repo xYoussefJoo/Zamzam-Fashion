@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -113,16 +112,12 @@ public static class DependencyInjection
         // Someone who reads the database must not be able to forge the owner's cookie, so the keys are encrypted.
         // Development keeps them plain: the dev database is shared and each PC would encrypt them differently.
         if (environment.IsDevelopment()) return;
-        if (configuration["DataProtection:CertificateBase64"] is { Length: > 0 } pfx)
-        {
-            // A .pfx in config (MonsterASP env var): works on any server the app moves to.
-            var certificate = X509CertificateLoader.LoadPkcs12(Convert.FromBase64String(pfx), configuration["DataProtection:CertificatePassword"]);
-            dataProtection.ProtectKeysWithCertificate(certificate);
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            // No certificate: Windows DPAPI ties the keys to this server. Moving servers = the owner logs in again.
-            dataProtection.ProtectKeysWithDpapi(protectToLocalMachine: true);
-        }
+        // A .pfx in config (MonsterASP env var), made once with scripts/new-dataprotection-cert.ps1. It works on any
+        // server the app moves to. No fallback: DPAPI on a shared host lets other sites on the machine read the keys.
+        if (configuration["DataProtection:CertificateBase64"] is not { Length: > 0 } pfx)
+            throw new InvalidOperationException(
+                "DataProtection:CertificateBase64 is required outside Development (run scripts/new-dataprotection-cert.ps1).");
+        var certificate = X509CertificateLoader.LoadPkcs12(Convert.FromBase64String(pfx), configuration["DataProtection:CertificatePassword"]);
+        dataProtection.ProtectKeysWithCertificate(certificate);
     }
 }
