@@ -35,7 +35,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
     options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
 });
-builder.Services.AddOpenApi(options => options.AddOperationTransformer<IdempotencyHeaderTransformer>());
+builder.Services.AddOpenApi(options => options
+    .AddOperationTransformer<IdempotencyHeaderTransformer>()
+    .AddOperationTransformer<CamelCaseQueryTransformer>());
 
 // Errors: every failure becomes ProblemDetails. A 400 without its own code is a validation error.
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>

@@ -147,21 +147,21 @@
         ],
         "parameters": [
           {
-            "name": "Category",
+            "name": "category",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "Q",
+            "name": "q",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "Size",
+            "name": "size",
             "in": "query",
             "schema": {
               "type": "array",
@@ -171,7 +171,7 @@
             }
           },
           {
-            "name": "Color",
+            "name": "color",
             "in": "query",
             "schema": {
               "type": "array",
@@ -182,7 +182,7 @@
             }
           },
           {
-            "name": "MinPrice",
+            "name": "minPrice",
             "in": "query",
             "schema": {
               "type": "number",
@@ -190,7 +190,7 @@
             }
           },
           {
-            "name": "MaxPrice",
+            "name": "maxPrice",
             "in": "query",
             "schema": {
               "type": "number",
@@ -198,21 +198,21 @@
             }
           },
           {
-            "name": "InStock",
+            "name": "inStock",
             "in": "query",
             "schema": {
               "type": "boolean"
             }
           },
           {
-            "name": "Sort",
+            "name": "sort",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "Page",
+            "name": "page",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -220,7 +220,7 @@
             }
           },
           {
-            "name": "PageSize",
+            "name": "pageSize",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -768,7 +768,7 @@
         ],
         "parameters": [
           {
-            "name": "CategoryId",
+            "name": "categoryId",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -776,35 +776,35 @@
             }
           },
           {
-            "name": "Q",
+            "name": "q",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "IsVisible",
+            "name": "isVisible",
             "in": "query",
             "schema": {
               "type": "boolean"
             }
           },
           {
-            "name": "LowStock",
+            "name": "lowStock",
             "in": "query",
             "schema": {
               "type": "boolean"
             }
           },
           {
-            "name": "Sort",
+            "name": "sort",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "Page",
+            "name": "page",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -812,7 +812,7 @@
             }
           },
           {
-            "name": "PageSize",
+            "name": "pageSize",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -1329,7 +1329,7 @@
         ],
         "parameters": [
           {
-            "name": "Status",
+            "name": "status",
             "in": "query",
             "schema": {
               "type": "array",
@@ -1339,21 +1339,21 @@
             }
           },
           {
-            "name": "Type",
+            "name": "type",
             "in": "query",
             "schema": {
               "$ref": "#/components/schemas/OrderType"
             }
           },
           {
-            "name": "Q",
+            "name": "q",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "From",
+            "name": "from",
             "in": "query",
             "schema": {
               "type": "string",
@@ -1361,7 +1361,7 @@
             }
           },
           {
-            "name": "To",
+            "name": "to",
             "in": "query",
             "schema": {
               "type": "string",
@@ -1369,7 +1369,7 @@
             }
           },
           {
-            "name": "Page",
+            "name": "page",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -1377,7 +1377,7 @@
             }
           },
           {
-            "name": "PageSize",
+            "name": "pageSize",
             "in": "query",
             "schema": {
               "type": "integer",
