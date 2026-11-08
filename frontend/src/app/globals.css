@@ -278,3 +278,14 @@ html[lang="en"] * {
   transition-delay: 0.96s;
   animation-delay: 0.96s;
 }
+
+/* Visitors who turn animations off see everything at once, without slides or fades. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal-init, .reveal-left, .reveal-right, .reveal-scale { opacity: 1 !important; transform: none !important; }
+}

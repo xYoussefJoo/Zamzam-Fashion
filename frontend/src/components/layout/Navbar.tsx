@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
 import { PageId } from '@/types/zamzam';
-import { navigationLabels, assetPath } from '@/data/seed';
+import { navigationLabels, assetPath } from '@/lib/labels';
 import { FaShoppingCart } from "react-icons/fa";
 
 

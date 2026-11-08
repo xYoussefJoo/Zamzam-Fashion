@@ -2,216 +2,137 @@
 
 import React, { useState, FormEvent } from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
+import { useApi } from '@/lib/useApi';
+import { ApiError, errorText } from '@/lib/api';
+import { getAdminSiteSettings, saveSiteSettings, type SiteContent } from '@/lib/admin';
 
+// #43–#44 — the editable home page content, contacts and social links (delivery fees live in Delivery zones).
 export default function AdminSettings() {
-  const data = useZamzamStore((state) => state.data);
-  const updateSettings = useZamzamStore((state) => state.updateSettings);
+  const t = useZamzamStore((state) => state.t);
+  const { data, error, reload } = useApi(getAdminSiteSettings, []);
+  if (error) {
+    return (
+      <div className="bg-white p-6 rounded-2xl border border-[#e9e4dc] space-y-2">
+        <p className="text-sm font-bold text-[#a72f3e]">{errorText(error, t)}</p>
+        <button type="button" onClick={reload} className="px-4 py-2 rounded-lg bg-[#142b4a] text-white text-xs font-bold cursor-pointer">{t('إعادة المحاولة', 'Try again')}</button>
+      </div>
+    );
+  }
+  if (!data) return <div className="h-96 rounded-2xl bg-[#f7f3eb] animate-pulse" />;
+  return <SettingsForm initial={data} />;
+}
+
+const clean = (v: string | null | undefined) => (v && v.trim() ? v.trim() : null);
+
+function SettingsForm({ initial }: { initial: SiteContent }) {
   const t = useZamzamStore((state) => state.t);
   const showToast = useZamzamStore((state) => state.showToast);
+  const refreshSite = useZamzamStore((state) => state.refreshSite);
+  const [s, setS] = useState<SiteContent>(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
 
-  const [bannerAr, setBannerAr] = useState(data.settings.bannerAr || '');
-  const [bannerEn, setBannerEn] = useState(data.settings.bannerEn || '');
-  const [deliveryFee, setDeliveryFee] = useState<string>(
-    String(data.settings.deliveryFee ?? 65)
-  );
-  const [collectionAr, setCollectionAr] = useState(data.settings.collectionAr || '');
-  const [collectionEn, setCollectionEn] = useState(data.settings.collectionEn || '');
-  const [collectionEnabled, setCollectionEnabled] = useState(
-    data.settings.collectionEnabled !== false
-  );
+  const set = <K extends keyof SiteContent>(key: K, value: SiteContent[K]) => setS((prev) => ({ ...prev, [key]: value }));
 
-  const [phone, setPhone] = useState(data.settings.phone || '');
-  const [whatsapp, setWhatsapp] = useState(data.settings.whatsapp || '');
-  const [email, setEmail] = useState(data.settings.email || '');
-  const [addressAr, setAddressAr] = useState(data.settings.addressAr || '');
-  const [addressEn, setAddressEn] = useState(data.settings.addressEn || '');
-  const [facebook, setFacebook] = useState(data.settings.facebook || '');
-  const [instagram, setInstagram] = useState(data.settings.instagram || '');
-  const [tiktok, setTiktok] = useState(data.settings.tiktok || '');
-  const [saved, setSaved] = useState(false);
-
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    updateSettings({
-      bannerAr,
-      bannerEn,
-      deliveryFee: Math.max(0, Number(deliveryFee) || 0),
-      collectionAr,
-      collectionEn,
-      collectionEnabled,
-      phone,
-      whatsapp,
-      email,
-      addressAr,
-      addressEn,
-      facebook,
-      instagram,
-      tiktok,
-    });
-    setSaved(true);
-    showToast(t('تم حفظ الإعدادات بنجاح', 'Settings saved successfully'), 'success');
-    setTimeout(() => setSaved(false), 2200);
+    setBusy(true);
+    setError(undefined);
+    try {
+      const saved = await saveSiteSettings({
+        announcementAr: s.announcementAr.trim(),
+        announcementEn: s.announcementEn.trim(),
+        hero: { titleAr: s.hero.titleAr.trim(), titleEn: s.hero.titleEn.trim(), subtitleAr: s.hero.subtitleAr.trim(), subtitleEn: s.hero.subtitleEn.trim(), imageUrl: clean(s.hero.imageUrl) },
+        collection: { enabled: s.collection.enabled, titleAr: s.collection.titleAr.trim(), titleEn: s.collection.titleEn.trim() },
+        contact: {
+          phone: clean(s.contact.phone), whatsApp: clean(s.contact.whatsApp), email: clean(s.contact.email),
+          addressAr: clean(s.contact.addressAr), addressEn: clean(s.contact.addressEn),
+        },
+        social: { facebook: clean(s.social.facebook), instagram: clean(s.social.instagram), tikTok: clean(s.social.tikTok) },
+      });
+      setS(saved);
+      void refreshSite(); // the banner, hero and footer update right away
+      showToast(t('تم حفظ محتوى الموقع', 'Site content saved'), 'success');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const footerFields: [string, string, string, string, (v: string) => void][] = [
-    ['phone', 'رقم الهاتف', 'Phone number', phone, setPhone],
-    ['whatsapp', 'واتساب بكود الدولة', 'WhatsApp with country code', whatsapp, setWhatsapp],
-    ['email', 'البريد الإلكتروني', 'Email address', email, setEmail],
-    ['addressAr', 'العنوان بالعربي', 'Address (Arabic)', addressAr, setAddressAr],
-    ['addressEn', 'العنوان بالإنجليزي', 'Address (English)', addressEn, setAddressEn],
-    ['facebook', 'رابط فيسبوك HTTPS', 'Facebook HTTPS URL', facebook, setFacebook],
-    ['instagram', 'رابط إنستجرام HTTPS', 'Instagram HTTPS URL', instagram, setInstagram],
-    ['tiktok', 'رابط تيك توك HTTPS', 'TikTok HTTPS URL', tiktok, setTiktok],
-  ];
+  const input = 'w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]';
+  const box = 'bg-white p-6 sm:p-8 rounded-2xl border border-[#e9e4dc] shadow-2xs space-y-4';
+  const field = (label: [string, string], value: string | null | undefined, onChange: (v: string) => void, opts: { ltr?: boolean; type?: string; max?: number; area?: boolean } = {}) => (
+    <label className="flex flex-col gap-1.5 text-xs font-bold text-[#2d3540]">
+      <span>{t(...label)}</span>
+      {opts.area ? (
+        <textarea value={value ?? ''} maxLength={opts.max ?? 500} onChange={(e) => onChange(e.target.value)} className={`${input} min-h-[70px]`} dir={opts.ltr ? 'ltr' : undefined} />
+      ) : (
+        <input type={opts.type ?? 'text'} value={value ?? ''} maxLength={opts.max ?? 200} onChange={(e) => onChange(e.target.value)} className={input} dir={opts.ltr ? 'ltr' : undefined} />
+      )}
+    </label>
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Hero Banner Section */}
-      <div className="bg-white rounded-3xl border border-[#e8e3d9] shadow-xs overflow-hidden">
-        <div className="p-6 border-b border-[#e8e3d9] bg-[#faf7f2]/50">
-          <h3 className="text-base sm:text-lg font-serif font-bold text-[#142b4a]">
-            {t('محتوى البانر الرئيسي', 'Hero banner content')}
-          </h3>
-          <p className="text-xs text-[#77808b] mt-0.5">
-            {t('العناوين ورسوم الشحن التقديرية', 'Headlines & standard delivery rate')}
-          </p>
+      <section className={box}>
+        <h3 className="text-base sm:text-lg font-serif font-bold text-[#142b4a]">{t('شريط الإعلان', 'Announcement bar')}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {field(['النص بالعربي', 'Arabic text'], s.announcementAr, (v) => set('announcementAr', v))}
+          {field(['النص بالإنجليزي', 'English text'], s.announcementEn, (v) => set('announcementEn', v), { ltr: true })}
         </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#2d3540]">
-              {t('عنوان عربي', 'Arabic headline')}
-            </label>
-            <input
-              name="bannerAr"
-              value={bannerAr}
-              onChange={(e) => setBannerAr(e.target.value)}
-              required
-                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
-            />
-          </div>
+      </section>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#2d3540]">
-              English headline
-            </label>
-            <input
-              name="bannerEn"
-              value={bannerEn}
-              onChange={(e) => setBannerEn(e.target.value)}
-              required
-                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
-            />
-          </div>
-
-          <div className="space-y-1.5 sm:col-span-2 sm:max-w-xs">
-            <label className="text-xs font-bold text-[#2d3540]">
-              {t('رسوم التوصيل التقديرية (ج.م)', 'Estimated delivery fee (EGP)')}
-            </label>
-            <input
-              name="deliveryFee"
-              type="number"
-              min="0"
-              value={deliveryFee}
-              onChange={(e) => setDeliveryFee(e.target.value)}
-              required
-                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
-            />
+      <section className={box}>
+        <h3 className="text-base sm:text-lg font-serif font-bold text-[#142b4a]">{t('الواجهة الرئيسية', 'Home hero')}</h3>
+        <p className="text-xs text-[#79808b]">{t('اتركي الحقل فارغًا لاستخدام النص الافتراضي.', 'Leave a field empty to keep the built-in text.')}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {field(['العنوان بالعربي', 'Title (Arabic)'], s.hero.titleAr, (v) => set('hero', { ...s.hero, titleAr: v }))}
+          {field(['العنوان بالإنجليزي', 'Title (English)'], s.hero.titleEn, (v) => set('hero', { ...s.hero, titleEn: v }), { ltr: true })}
+          {field(['الوصف بالعربي', 'Subtitle (Arabic)'], s.hero.subtitleAr, (v) => set('hero', { ...s.hero, subtitleAr: v }), { area: true })}
+          {field(['الوصف بالإنجليزي', 'Subtitle (English)'], s.hero.subtitleEn, (v) => set('hero', { ...s.hero, subtitleEn: v }), { area: true, ltr: true })}
+          <div className="sm:col-span-2">
+            {field(['رابط صورة الواجهة (اختياري)', 'Hero image link (optional)'], s.hero.imageUrl, (v) => set('hero', { ...s.hero, imageUrl: v }), { ltr: true, type: 'url', max: 500 })}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* New Collection Section */}
-      <div className="bg-white rounded-3xl border border-[#e8e3d9] shadow-xs overflow-hidden">
-        <div className="p-6 border-b border-[#e8e3d9] bg-[#faf7f2]/50">
-          <h3 className="text-base sm:text-lg font-serif font-bold text-[#142b4a]">
-            {t('الكولكشن الجديد', 'New collection banner')}
-          </h3>
-          <p className="text-xs text-[#77808b] mt-0.5">
-            {t('إدارة القسم الترويجي للقطع الجديدة', 'Manage new arrivals highlight section')}
-          </p>
+      <section className={box}>
+        <h3 className="text-base sm:text-lg font-serif font-bold text-[#142b4a]">{t('الكولكشن الجديد', 'New collection banner')}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {field(['العنوان بالعربي', 'Title (Arabic)'], s.collection.titleAr, (v) => set('collection', { ...s.collection, titleAr: v }))}
+          {field(['العنوان بالإنجليزي', 'Title (English)'], s.collection.titleEn, (v) => set('collection', { ...s.collection, titleEn: v }), { ltr: true })}
         </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#2d3540]">
-              {t('عنوان الكولكشن بالعربي', 'Collection title (Arabic)')}
-            </label>
-            <input
-              name="collectionAr"
-              value={collectionAr}
-              onChange={(e) => setCollectionAr(e.target.value)}
-              className={'w-full border border-[#e8e3d9] rounded-xl px-4 py-3 text-sm bg-white text-[#2d3540] focus:ring-2 focus:ring-[#b99664] focus:border-[#b99664] outline-none transition-all placeholder:text-[#77808b]/60'}
-            />
-          </div>
+        <label className="flex items-center gap-3 cursor-pointer text-sm font-bold text-[#2d3540]">
+          <input type="checkbox" checked={s.collection.enabled} onChange={(e) => set('collection', { ...s.collection, enabled: e.target.checked })} className="accent-[#142b4a] w-4 h-4" />
+          <span>{t('إظهار القسم في الرئيسية', 'Show it on the home page')}</span>
+        </label>
+      </section>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#2d3540]">
-              {t('عنوان الكولكشن بالإنجليزي', 'Collection title (English)')}
-            </label>
-            <input
-              name="collectionEn"
-              value={collectionEn}
-              onChange={(e) => setCollectionEn(e.target.value)}
-                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
-            />
-          </div>
-
-          <div className="col-span-full pt-1">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                name="collectionEnabled"
-                checked={collectionEnabled}
-                onChange={(e) => setCollectionEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-[#e8e3d9] accent-[#b99664] cursor-pointer"
-              />
-              <span className="text-sm font-bold text-[#142b4a]">
-                {t('إظهار الكولكشن في الصفحة الرئيسية', 'Display new collection on home page')}
-              </span>
-            </label>
-          </div>
+      <section className={box}>
+        <h3 className="text-base sm:text-lg font-serif font-bold text-[#142b4a]">{t('بيانات التواصل والروابط', 'Contacts & social links')}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {field(['رقم الهاتف', 'Phone number'], s.contact.phone, (v) => set('contact', { ...s.contact, phone: v }), { ltr: true, type: 'tel', max: 30 })}
+          {field(['واتساب بكود الدولة (أرقام فقط، مثل 201012345678)', 'WhatsApp with country code (digits, e.g. 201012345678)'], s.contact.whatsApp, (v) => set('contact', { ...s.contact, whatsApp: v }), { ltr: true, max: 20 })}
+          {field(['البريد الإلكتروني', 'Email address'], s.contact.email, (v) => set('contact', { ...s.contact, email: v }), { ltr: true, type: 'email', max: 254 })}
+          <span />
+          {field(['العنوان بالعربي', 'Address (Arabic)'], s.contact.addressAr, (v) => set('contact', { ...s.contact, addressAr: v }), { area: true })}
+          {field(['العنوان بالإنجليزي', 'Address (English)'], s.contact.addressEn, (v) => set('contact', { ...s.contact, addressEn: v }), { area: true, ltr: true })}
+          {field(['فيسبوك (يبدأ بـ https://)', 'Facebook (starts with https://)'], s.social.facebook, (v) => set('social', { ...s.social, facebook: v }), { ltr: true, type: 'url', max: 500 })}
+          {field(['إنستجرام (يبدأ بـ https://)', 'Instagram (starts with https://)'], s.social.instagram, (v) => set('social', { ...s.social, instagram: v }), { ltr: true, type: 'url', max: 500 })}
+          {field(['تيك توك (يبدأ بـ https://)', 'TikTok (starts with https://)'], s.social.tikTok, (v) => set('social', { ...s.social, tikTok: v }), { ltr: true, type: 'url', max: 500 })}
         </div>
-      </div>
+      </section>
 
-      {/* Footer & Social Information */}
-      <div className="bg-white rounded-3xl border border-[#e8e3d9] shadow-xs overflow-hidden">
-        <div className="p-6 border-b border-[#e8e3d9] bg-[#faf7f2]/50">
-          <h3 className="text-base sm:text-lg font-serif font-bold text-[#142b4a]">
-            {t('معلومات الفوتر والتواصل', 'Footer & contact details')}
-          </h3>
-          <p className="text-xs text-[#77808b] mt-0.5">
-            {t('وسائل التواصل والعناوين وروابط المنصات', 'Customer contact channels & social links')}
-          </p>
-        </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {footerFields.map(([key, arLabel, enLabel, val, setter]) => (
-            <div key={key} className="space-y-1.5">
-              <label className="text-xs font-bold text-[#2d3540]">
-                {t(arLabel, enLabel)}
-              </label>
-              <input
-                name={key}
-                value={val}
-                onChange={(e) => setter(e.target.value)}
-                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+      {error ? (
+        <p role="alert" className="text-xs font-bold text-[#a72f3e] bg-red-50 border border-red-200 rounded-xl p-3">
+          {error instanceof ApiError && error.problem.errors ? Object.values(error.problem.errors).flat().join(' ') : errorText(error, t)}
+        </p>
+      ) : null}
 
-      {/* Action Button */}
-      <div className="flex justify-end pt-2">
-        <button
-          type="submit"
-          className={`px-8 py-3.5 rounded-full text-sm font-bold transition-all duration-300 cursor-pointer shadow-md active:scale-[0.98] ${
-            saved
-              ? 'bg-[#b99664] text-white shadow-lg shadow-[#b99664]/30'
-              : 'bg-[#142b4a] hover:bg-[#1e3a61] text-white'
-          }`}
-        >
-          {saved ? `✓ ${t('تم الحفظ بنجاح', 'Saved successfully!')}` : t('حفظ التعديلات', 'Save changes')}
-        </button>
-      </div>
+      <button type="submit" disabled={busy} className="px-8 py-3 rounded-xl bg-[#142b4a] hover:bg-[#1e3a61] disabled:opacity-60 text-white text-sm font-bold transition-colors cursor-pointer">
+        {busy ? '…' : t('حفظ الإعدادات', 'Save settings')}
+      </button>
     </form>
   );
 }

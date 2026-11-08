@@ -3,11 +3,14 @@
 import React from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-import { assetPath } from '@/data/seed';
+import { assetPath } from '@/lib/labels';
+import { useApi } from '@/lib/useApi';
+import { pick, searchProducts } from '@/lib/shop';
 import ProductCard from '@/components/shop/ProductCard';
 
 export default function HomeView() {
-  const data = useZamzamStore((state) => state.data);
+  const site = useZamzamStore((state) => state.site);
+  const categories = useZamzamStore((state) => state.categories);
   const lang = useZamzamStore((state) => state.lang);
   const go = useZamzamStore((state) => state.go);
   const setFilter = useZamzamStore((state) => state.setFilter);
@@ -16,21 +19,24 @@ export default function HomeView() {
   // Activates animations when elements enter the screen on scroll
   useScrollReveal();
 
-  const cats = [
-    { id: 1, img: 'assets/products/pants-beige.jpg' },
-    { id: 2, img: 'assets/products/blouse-cream.jpg' },
-    { id: 3, img: 'assets/modest-abaya-editorial.jpg' },
-    { id: 4, img: 'assets/products/set-beige.jpg' },
+  // Editorial photos for category tiles that don't have their own image yet (set one in Admin → Categories).
+  const tilePhotos = [
+    'assets/products/pants-beige.jpg',
+    'assets/products/blouse-cream.jpg',
+    'assets/modest-abaya-editorial.jpg',
+    'assets/products/set-beige.jpg',
   ];
 
-  const handleCategoryClick = (categoryId: number) => {
-    setFilter(String(categoryId));
+  const handleCategoryClick = (slug: string) => {
+    setFilter(slug);
     go('shop');
   };
 
-  const visibleProducts = data.products.filter((p) => p.visible);
-  const featured = visibleProducts.slice(0, 4);
-  const newArrivals = visibleProducts.slice(-3).reverse();
+  // The newest pieces feed both 'The edit' and the new-arrivals photos.
+  const { data: latest } = useApi(() => searchProducts({ sort: 'newest', pageSize: 8 }), []);
+  const featured = latest?.items.slice(0, 4) ?? [];
+  const newArrivals = (latest?.items ?? []).filter((p) => p.image).slice(0, 3);
+  const hero = site?.hero;
 
   return (
     <main className="overflow-hidden">
@@ -43,13 +49,13 @@ export default function HomeView() {
           </span>
 
           <h1 className="text-4xl sm:text-5xl lg:text-[4.2rem] font-serif font-bold text-[#142b4a] leading-[1.12] my-4 reveal-init delay-100">
-            {t('ستايل يشبهك.', 'Made to feel like you.')}
+            {t(hero?.titleAr || 'ستايل يشبهك.', hero?.titleEn || 'Made to feel like you.')}
           </h1>
 
           <p className="text-sm sm:text-base text-[#5e605b] leading-relaxed max-w-lg mb-8 reveal-init delay-200">
             {t(
-              'تصميمات أنيقة لكل يوم، وقطع تتفصل على مقاسك بالضبط بخامات راقية ولمسات تجمع بين الراحة والجمال.',
-              'Elevated everyday essentials and custom-tailored pieces, thoughtfully crafted with premium fabrics and timeless silhouettes.'
+              hero?.subtitleAr || 'تصميمات أنيقة لكل يوم، وقطع تتفصل على مقاسك بالضبط بخامات راقية ولمسات تجمع بين الراحة والجمال.',
+              hero?.subtitleEn || 'Elevated everyday essentials and custom-tailored pieces, thoughtfully crafted with premium fabrics and timeless silhouettes.'
             )}
           </p>
 
@@ -96,7 +102,7 @@ export default function HomeView() {
         <div className="relative min-h-[380px] lg:min-h-full overflow-hidden bg-[#d5b995] group reveal-right delay-200">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={assetPath('assets/modest-abaya-editorial.jpg')}
+            src={assetPath(hero?.imageUrl || 'assets/modest-abaya-editorial.jpg')}
             alt="Women's fashion editorial"
             className="w-full h-full object-cover object-[center_34%] group-hover:scale-[1.04] transition-transform duration-1000 ease-out"
           />
@@ -130,21 +136,20 @@ export default function HomeView() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          {data.categories.map((c, i) => {
-            const tileImg =
-              cats.find((x) => x.id === c.id)?.img ||
-              'assets/products/blouse-cream.jpg';
+          {categories.map((c, i) => {
+            const tileImg = c.imageUrl || tilePhotos[i % tilePhotos.length];
+            const name = pick(lang, c.nameAr, c.nameEn);
             return (
               <button
                 key={c.id}
                 type="button"
                 className={`relative h-[260px] sm:h-[350px] rounded-2xl overflow-hidden bg-[#e0ceb6] group cursor-pointer text-start shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1.5 border border-[#e8dfd1] reveal-init delay-${(i + 1) * 100}`}
-                onClick={() => handleCategoryClick(c.id)}
+                onClick={() => handleCategoryClick(c.slug)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={assetPath(tileImg)}
-                  alt={c[lang]}
+                  alt={name}
                   loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                 />
@@ -155,7 +160,7 @@ export default function HomeView() {
 
                 <div className="absolute bottom-0 start-0 end-0 p-5">
                   <span className="text-white text-base sm:text-lg font-bold flex items-end justify-between w-full">
-                    <span>{c[lang]}</span>
+                    <span>{name}</span>
                     <span className="text-[#b99664] text-xl group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300">
                       ↗
                     </span>
@@ -168,7 +173,7 @@ export default function HomeView() {
       </section>
 
       {/* ══════════════════════ NEW COLLECTION BANNER ══════════════════════ */}
-      {data.settings.collectionEnabled !== false && (
+      {site?.collection.enabled !== false && (
         <section className="max-w-[1240px] mx-auto px-4 sm:px-6 pb-16">
           <div className="relative overflow-hidden rounded-3xl bg-[#142b4a] p-8 sm:p-14 shadow-xl reveal-init">
             {/* Subtle background dots pattern */}
@@ -186,9 +191,7 @@ export default function HomeView() {
                   NEW ARRIVALS
                 </span>
                 <h2 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-bold text-white leading-tight">
-                  {lang === 'ar'
-                    ? data.settings.collectionAr
-                    : data.settings.collectionEn}
+                  {t(site?.collection.titleAr || 'الكولكشن الجديد', site?.collection.titleEn || 'New collection')}
                 </h2>
                 <p className="text-sm text-white/75 leading-relaxed max-w-md">
                   {t(
@@ -219,8 +222,10 @@ export default function HomeView() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={assetPath(p.image)}
-                      alt={p[lang]}
+                      src={p.image?.url}
+                      srcSet={p.image?.srcSet}
+                      sizes="160px"
+                      alt={pick(lang, p.nameAr, p.nameEn)}
                       loading="lazy"
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                       onError={(e) => {

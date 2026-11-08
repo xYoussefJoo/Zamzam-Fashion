@@ -1,19 +1,28 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
+import React, { useEffect, useState, FormEvent } from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
-import { adminTabsLabels, RELEASE_NAME, assetPath } from '@/data/seed';
-import { AdminTab } from '@/types/zamzam';
+import { adminTabsLabels, assetPath } from '@/lib/labels';
+import { ApiError, errorText } from '@/lib/api';
+import { login } from '@/lib/admin';
+import type { AdminTab } from '@/types/zamzam';
 import AdminOverview from './AdminOverview';
 import AdminCategories from './AdminCategories';
 import AdminProducts from './AdminProducts';
 import AdminProductEditor from './AdminProductEditor';
 import AdminOrders from './AdminOrders';
 import AdminSettings from './AdminSettings';
+import AdminColors from './AdminColors';
+import AdminZones from './AdminZones';
+import AdminTailoringCatalog from './AdminTailoringCatalog';
+import AdminPricing from './AdminPricing';
+import AdminPassword from './AdminPassword';
 
 export default function AdminView() {
-  const auth = useZamzamStore((state) => state.auth);
-  const login = useZamzamStore((state) => state.login);
+  const user = useZamzamStore((state) => state.user);
+  const authChecked = useZamzamStore((state) => state.authChecked);
+  const checkSession = useZamzamStore((state) => state.checkSession);
+  const setUser = useZamzamStore((state) => state.setUser);
   const logout = useZamzamStore((state) => state.logout);
   const adminTab = useZamzamStore((state) => state.adminTab);
   const setAdminTab = useZamzamStore((state) => state.setAdminTab);
@@ -21,201 +30,192 @@ export default function AdminView() {
   const go = useZamzamStore((state) => state.go);
   const t = useZamzamStore((state) => state.t);
 
-  const [passcode, setPasscode] = useState('');
+  // The cookie may still be valid from an earlier visit; and any 401 later sends the owner back to the login.
+  useEffect(() => {
+    if (!authChecked) void checkSession();
+    const signedOut = () => setUser(null);
+    window.addEventListener('zamzam:signed-out', signedOut);
+    return () => window.removeEventListener('zamzam:signed-out', signedOut);
+  }, [authChecked, checkSession, setUser]);
 
-  const handleLogin = (e: FormEvent) => {
-    e.preventDefault();
-    if (login(passcode)) {
-      setPasscode('');
-    } else {
-      alert(t('الرمز غير صحيح', 'Invalid code'));
-    }
-  };
+  if (!authChecked) {
+    return <div className="max-w-md mx-auto my-24 h-40 rounded-2xl bg-[#f7f3eb] animate-pulse" aria-busy="true" />;
+  }
+  if (!user) return <LoginForm />;
+
+  // The first password from setup must be changed before anything else.
+  const tab: AdminTab = user.mustChangePassword ? 'password' : adminTab;
 
   const adminBack = () => {
-    if (adminTab === 'editor') {
+    if (tab === 'editor') {
       setAdminTab('products');
       setEditingProductId(null);
-    } else if (adminTab !== 'overview') {
+    } else if (tab !== 'overview') {
       setAdminTab('overview');
     } else {
       go('home');
     }
   };
 
-  const tabs: [AdminTab, string, string][] = [
-    ['overview', 'نظرة عامة', 'Overview'],
-    ['categories', 'الأقسام', 'Categories'],
-    ['products', 'المنتجات', 'Products'],
-    ['orders', 'الطلبات', 'Orders'],
-    ['settings', 'الإعدادات', 'Settings'],
+  const groups: [string, string, AdminTab[]][] = [
+    ['إدارة المتجر', 'STORE', ['overview', 'orders', 'products', 'categories', 'colors']],
+    ['التفصيل', 'TAILORING', ['tailoring', 'pricing']],
+    ['الإعدادات', 'SETTINGS', ['zones', 'settings', 'password']],
   ];
-
-  if (!auth) {
-    return (
-      <div className="max-w-md mx-auto my-16 px-4">
-        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#d6c2a7] shadow-md space-y-5">
-          <div className="text-center space-y-1">
-            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#142b4a]">
-              {t('دخول الإدارة التجريبي', 'Demo admin access')}
-            </h2>
-            <p className="text-xs text-[#77808b]">
-              Zamzam Fashion • Management Studio
-            </p>
-          </div>
-
-          <div className="bg-[#fff7e7] border border-[#f1dcae] text-[#70542d] p-3 rounded-lg text-xs leading-relaxed">
-            {t(
-              'للمعاينة فقط: كلمة المرور داخل المتصفح وليست نظام حماية حقيقي. لا تستخدم بيانات عملاء حقيقية.',
-              'Demo only: browser-side password is NOT real security. Do not use real customer data.'
-            )}
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
-              <span>{t('رمز المعاينة', 'Demo passcode')}</span>
-              <input
-                type="password"
-                name="pass"
-                required
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                className="border border-[#cdbb9e] rounded-lg p-3 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
-              />
-            </label>
-
-            <button
-              type="submit"
-              className="w-full py-3 rounded-lg bg-[#142b4a] hover:bg-[#1e3a61] text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer"
-            >
-              {t('دخول', 'Enter')}
-            </button>
-          </form>
-
-          <p className="text-xs text-center text-[#77808b]">
-            Demo code: <code className="bg-[#f7f3eb] px-1.5 py-0.5 rounded font-mono font-bold text-[#142b4a]">zamzam-demo</code>
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] min-h-[calc(100vh-120px)] bg-[#f8f6f2]">
-      {/* Sidebar */}
       <aside className="bg-[#1e3046] text-white p-6 flex flex-col justify-between border-b md:border-b-0 md:border-e border-white/10">
         <div className="space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-white/15">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={assetPath('assets/logo-transparent.png')}
-              alt="Zamzam Fashion"
-              className="w-12 h-12 object-contain"
-            />
+            <img src={assetPath('assets/logo-transparent.png')} alt="Zamzam Fashion" className="w-12 h-12 object-contain" />
             <div>
-              <strong className="block text-sm font-serif font-bold text-white">
-                Zamzam Fashion
-              </strong>
-              <small className="text-[9px] tracking-wider text-[#d9c5a4] uppercase font-semibold">
-                STORE MANAGEMENT
-              </small>
+              <strong className="block text-sm font-serif font-bold text-white">Zamzam Fashion</strong>
+              <small className="text-[9px] tracking-wider text-[#d9c5a4] uppercase font-semibold">STORE MANAGEMENT</small>
             </div>
           </div>
 
-          <div className="space-y-1">
-            <div className="text-[10px] tracking-widest uppercase font-bold text-[#c1c9d1] px-3 pb-1">
-              {t('إدارة المتجر', 'STORE MANAGEMENT')}
+          {groups.map(([ar, en, keys]) => (
+            <div key={en} className="space-y-1">
+              <div className="text-[10px] tracking-widest uppercase font-bold text-[#c1c9d1] px-3 pb-1">{t(ar, en)}</div>
+              {keys.map((key) => {
+                const isActive = tab === key || (tab === 'editor' && key === 'products');
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={user.mustChangePassword && key !== 'password'}
+                    className={`w-full text-start flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isActive ? 'bg-[#c4a274] text-[#17283e]' : 'text-[#d7dfe7] hover:bg-white/10'
+                    }`}
+                    onClick={() => {
+                      setAdminTab(key);
+                      setEditingProductId(null);
+                    }}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-current opacity-60" />
+                    <span>{t(...adminTabsLabels[key])}</span>
+                  </button>
+                );
+              })}
             </div>
-
-            {tabs.map(([key, arLabel, enLabel]) => {
-              const isActive =
-                adminTab === key || (adminTab === 'editor' && key === 'products');
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={`w-full text-start flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-sm font-bold transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-[#c4a274] text-[#17283e]'
-                      : 'text-[#d7dfe7] hover:bg-white/10'
-                  }`}
-                  onClick={() => {
-                    setAdminTab(key);
-                    setEditingProductId(null);
-                  }}
-                >
-                  <span className="w-2 h-2 rounded-full bg-current opacity-60" />
-                  <span>{t(arLabel, enLabel)}</span>
-                </button>
-              );
-            })}
-          </div>
+          ))}
         </div>
 
         <div className="pt-6 border-t border-white/15 space-y-2 mt-8 md:mt-0">
-          <button
-            type="button"
-            className="w-full text-start text-xs text-[#d7dfe7] hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-between"
-            onClick={() => go('home')}
-          >
-            <span>↗ {t('عرض المتجر', 'View storefront')}</span>
+          <p className="px-2 text-[11px] text-[#c1c9d1] truncate" title={user.email}>{user.fullName || user.email}</p>
+          <button type="button" className="w-full text-start text-xs text-[#d7dfe7] hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer" onClick={() => go('home')}>
+            ↗ {t('عرض المتجر', 'View storefront')}
           </button>
-          <button
-            type="button"
-            className="w-full text-start text-xs text-rose-300 hover:text-rose-200 p-2 rounded-lg hover:bg-rose-950/40 transition-colors cursor-pointer"
-            onClick={logout}
-          >
+          <button type="button" className="w-full text-start text-xs text-rose-300 hover:text-rose-200 p-2 rounded-lg hover:bg-rose-950/40 transition-colors cursor-pointer" onClick={() => void logout()}>
             {t('خروج', 'Sign out')}
           </button>
         </div>
       </aside>
 
-      {/* Main Admin Area */}
       <main className="p-6 sm:p-10 min-w-0 max-w-[1450px] w-full mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e9e4dc]">
           <div>
-            <span className="text-xs font-bold tracking-widest text-[#9c7c54] uppercase">
-              ZAMZAM FASHION / {RELEASE_NAME}
-            </span>
+            <span className="text-xs font-bold tracking-widest text-[#9c7c54] uppercase">ZAMZAM FASHION / ADMIN</span>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#142b4a] mt-0.5">
-              {adminTab === 'editor'
-                ? t('بيانات المنتج', 'Product editor')
-                : t(...(adminTabsLabels[adminTab] || adminTabsLabels.overview))}
+              {tab === 'editor' ? t('بيانات المنتج', 'Product editor') : t(...(adminTabsLabels[tab] || adminTabsLabels.overview))}
             </h2>
           </div>
-
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="px-4 py-2 rounded-lg border border-[#cdbb9e] bg-white hover:bg-[#f7f3eb] text-xs font-bold text-[#142b4a] transition-colors cursor-pointer"
-              onClick={adminBack}
-            >
-              {t('رجوع', 'Back')}
-            </button>
-            <button
-              type="button"
-              className="px-4 py-2 rounded-lg bg-[#142b4a] hover:bg-[#1e3a61] text-xs font-bold text-white transition-colors cursor-pointer"
-              onClick={() => go('home')}
-            >
+            {!user.mustChangePassword && (
+              <button type="button" className="px-4 py-2 rounded-lg border border-[#cdbb9e] bg-white hover:bg-[#f7f3eb] text-xs font-bold text-[#142b4a] transition-colors cursor-pointer" onClick={adminBack}>
+                {t('رجوع', 'Back')}
+              </button>
+            )}
+            <button type="button" className="px-4 py-2 rounded-lg bg-[#142b4a] hover:bg-[#1e3a61] text-xs font-bold text-white transition-colors cursor-pointer" onClick={() => go('home')}>
               ↗ {t('عرض المتجر', 'View store')}
             </button>
           </div>
         </div>
 
-        <div className="bg-[#fff8e9] border border-[#ead8b6] text-[#79613f] p-3.5 rounded-xl text-xs">
-          {t(
-            'نسخة تجريبية: البيانات محفوظة على هذا المتصفح فقط، ولا توجد صلاحيات إنتاجية أو قاعدة بيانات متصلة.',
-            'Demo: data is stored only in this browser; no production authorization or database connection.'
-          )}
-        </div>
+        {user.mustChangePassword && (
+          <div className="bg-[#fff8e9] border border-[#ead8b6] text-[#79613f] p-3.5 rounded-xl text-xs">
+            {t('هذه كلمة المرور الأولى. غيّريها الآن لحماية المتجر، ثم تفتح باقي الشاشات.', 'This is your first password. Change it now to protect the store; then the other screens open.')}
+          </div>
+        )}
 
-        {adminTab === 'overview' && <AdminOverview />}
-        {adminTab === 'categories' && <AdminCategories />}
-        {adminTab === 'products' && <AdminProducts />}
-        {adminTab === 'editor' && <AdminProductEditor />}
-        {adminTab === 'orders' && <AdminOrders />}
-        {adminTab === 'settings' && <AdminSettings />}
+        {tab === 'overview' && <AdminOverview />}
+        {tab === 'categories' && <AdminCategories />}
+        {tab === 'products' && <AdminProducts />}
+        {tab === 'editor' && <AdminProductEditor />}
+        {tab === 'orders' && <AdminOrders />}
+        {tab === 'colors' && <AdminColors />}
+        {tab === 'zones' && <AdminZones />}
+        {tab === 'tailoring' && <AdminTailoringCatalog />}
+        {tab === 'pricing' && <AdminPricing />}
+        {tab === 'settings' && <AdminSettings />}
+        {tab === 'password' && <AdminPassword />}
       </main>
+    </div>
+  );
+}
+
+function LoginForm() {
+  const t = useZamzamStore((state) => state.t);
+  const setUser = useZamzamStore((state) => state.setUser);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(undefined);
+    try {
+      setUser(await login(email.trim(), password, remember));
+      setPassword('');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const message = () => {
+    if (!(error instanceof ApiError)) return error ? errorText(error, t) : '';
+    if (error.code === 'INVALID_CREDENTIALS') return t('البريد أو كلمة المرور غير صحيحة', 'Wrong email or password');
+    if (error.code === 'LOCKED_OUT') {
+      const minutes = Math.ceil(Number(error.problem.retryAfterSeconds ?? 900) / 60);
+      return t(`تم إيقاف الدخول مؤقتًا بعد محاولات خاطئة. حاولي بعد ${minutes} دقيقة.`, `Too many wrong passwords. Try again in ${minutes} minutes.`);
+    }
+    return errorText(error, t);
+  };
+
+  const input = 'border border-[#cdbb9e] rounded-lg p-3 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]';
+  return (
+    <div className="max-w-md mx-auto my-16 px-4">
+      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#d6c2a7] shadow-md space-y-5">
+        <div className="text-center space-y-1">
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#142b4a]">{t('دخول الإدارة', 'Admin sign in')}</h2>
+          <p className="text-xs text-[#77808b]">Zamzam Fashion • Management Studio</p>
+        </div>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
+            <span>{t('البريد الإلكتروني', 'Email')}</span>
+            <input type="email" required autoComplete="username" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
+          </label>
+          <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
+            <span>{t('كلمة المرور', 'Password')}</span>
+            <input type="password" required autoComplete="current-password" dir="ltr" value={password} onChange={(e) => setPassword(e.target.value)} className={input} />
+          </label>
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#2d3540] cursor-pointer">
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="accent-[#142b4a] w-4 h-4" />
+            <span>{t('تذكرني على هذا الجهاز', 'Keep me signed in on this device')}</span>
+          </label>
+          {error ? <p role="alert" className="text-xs font-bold text-[#a72f3e] bg-red-50 border border-red-200 rounded-lg p-2.5">{message()}</p> : null}
+          <button type="submit" disabled={busy} className="w-full py-3 rounded-lg bg-[#142b4a] hover:bg-[#1e3a61] disabled:opacity-60 text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer">
+            {busy ? '…' : t('دخول', 'Sign in')}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
