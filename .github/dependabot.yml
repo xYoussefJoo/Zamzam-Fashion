@@ -1,12 +1,12 @@
-# GitHub checks our packages and opens a pull request when one has an update or a security fix.
-# Kept quiet on purpose: small updates come grouped in one PR per area, GitHub Actions in one PR a month,
-# and big (major) jumps of build and test tools wait until after launch. CI runs on each PR before you merge.
+# No automatic PRs: open-pull-requests-limit 0 turns off the routine "newer version" PRs.
+# Known vulnerabilities show up only if the owner turns on Dependabot alerts (Settings -> Code security).
+# To get version updates back, raise a limit to 1-3.
 version: 2
 updates:
   - package-ecosystem: nuget
     directory: /backend
     schedule: { interval: weekly, day: sunday }
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       backend-minor:
         update-types: [minor, patch]
@@ -22,7 +22,7 @@ updates:
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly, day: sunday }
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       frontend-minor:
         update-types: [minor, patch]
@@ -39,7 +39,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns: ["*"]
