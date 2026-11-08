@@ -36,7 +36,8 @@ export default function Footer() {
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={assetPath('assets/logo.png')}
+                src={assetPath('assets/logo-footer-192.webp')}
+                loading="lazy"
                 alt="Zamzam Fashion"
                 className="w-16 h-16 object-contain"
               />
@@ -113,6 +114,7 @@ export default function Footer() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={assetPath('assets/kp-logo.png')}
+                loading="lazy"
                 alt="Kernel Panic"
                 className="w-12 h-12 object-contain rounded-xs"
                 onError={(e) => {
@@ -121,7 +123,7 @@ export default function Footer() {
               />
               <span className='flex flex-col'>
               <span className='text-black font-bold text-lg'>KERNEL <span className='text-[#0062FF]'>PANIC</span></span>
-              <span className='text-gray-400 text-xs tracking-widest text-left w-full'>IT TEAM</span>
+              <span className='text-gray-500 text-xs tracking-widest text-left w-full'>IT TEAM</span>
               </span>
             </div>
             </a>

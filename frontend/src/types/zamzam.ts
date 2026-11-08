@@ -8,7 +8,6 @@ export type AdminTab =
   | 'overview'
   | 'categories'
   | 'products'
-  | 'editor'
   | 'orders'
   | 'colors'
   | 'zones'

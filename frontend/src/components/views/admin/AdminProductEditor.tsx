@@ -10,13 +10,15 @@ import {
 } from '@/lib/admin';
 import { adminSizes } from '@/lib/labels';
 import { pick } from '@/lib/shop';
+import { Button, ui, useConfirm, useModalDirty } from '@/components/admin/ui';
 
 const MAX_PHOTO = 5 * 1024 * 1024;
 const MAX_IMAGES = 10;
 
-// #22–#30 — one product: details, its size × color variants (stock and price each), and its photos.
+// #22–#30 — the product pop-up: details, its size × color variants (stock and price each), and its photos.
+// A new product saves its details first; the same pop-up then continues with stock and photos.
 export default function AdminProductEditor() {
-  const editingProductId = useZamzamStore((state) => state.editingProductId);
+  const editingProductId = useZamzamStore((state) => state.productModal?.id ?? null);
   const t = useZamzamStore((state) => state.t);
   const product = useApi(() => getAdminProduct(editingProductId!), [editingProductId], !!editingProductId);
 
@@ -45,9 +47,8 @@ export default function AdminProductEditor() {
 
 function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: () => void }) {
   const lang = useZamzamStore((state) => state.lang);
-  const editorCategoryId = useZamzamStore((state) => state.editorCategoryId);
-  const setEditingProductId = useZamzamStore((state) => state.setEditingProductId);
-  const setAdminTab = useZamzamStore((state) => state.setAdminTab);
+  const editorCategoryId = useZamzamStore((state) => state.productModal?.categoryId ?? null);
+  const setProductModalId = useZamzamStore((state) => state.setProductModalId);
   const t = useZamzamStore((state) => state.t);
   const showToast = useZamzamStore((state) => state.showToast);
   const categories = useApi(getAdminCategories, []);
@@ -68,6 +69,8 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
 
+  const initialKey = useState(() => JSON.stringify([categoryId, nameAr, nameEn, slug, descriptionAr, descriptionEn, basePrice, isVisible]))[0];
+  const modal = useModalDirty(JSON.stringify([categoryId, nameAr, nameEn, slug, descriptionAr, descriptionEn, basePrice, isVisible]) !== initialKey);
   const allCategories = (categories.data ?? []).flatMap((c) => [c, ...c.children]);
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
@@ -101,7 +104,7 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
           variants: sizes.flatMap((size) => colorIds.map((colorId) => ({ size, colorId, stock, priceOverride: null, sku: null }))),
         });
         showToast(t('تم إنشاء المنتج. أضيفي الصور الآن', 'Product created. Add its photos now'), 'success');
-        setEditingProductId(created.id); // reopen on the saved product: variants and photos
+        setProductModalId(created.id); // the pop-up continues on the saved product: variants and photos
       }
     } catch (err) {
       setError(err);
@@ -110,14 +113,14 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
     }
   };
 
-  const input = 'border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]';
+  const input = ui.input;
   const msg = (f: string) => {
     const m = fieldError(error, f);
     return m ? <small className="text-[11px] text-[#a72f3e]">{m}</small> : null;
   };
 
   return (
-    <section className="bg-white p-6 sm:p-8 rounded-2xl border border-[#e9e4dc] shadow-2xs space-y-6">
+    <section className={`${ui.card} p-5 sm:p-6 space-y-6`}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <span className="text-[11px] font-bold tracking-widest text-[#9c7c54] uppercase">PRODUCT</span>
@@ -125,9 +128,6 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
             {product ? t('تعديل بيانات المنتج', 'Edit product details') : t('منتج جديد', 'New product')}
           </h3>
         </div>
-        <button type="button" onClick={() => { setEditingProductId(null); setAdminTab('products'); }} className="px-4 py-2 rounded-lg border border-[#cdbb9e] bg-white text-xs font-bold text-[#142b4a] cursor-pointer">
-          {t('رجوع للمنتجات', 'Back to products')}
-        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -212,9 +212,10 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
         ) : null}
 
         <div className="sm:col-span-2">
-          <button type="submit" disabled={busy} className="px-8 py-3 rounded-xl bg-[#142b4a] hover:bg-[#1e3a61] disabled:opacity-60 text-white text-sm font-bold cursor-pointer">
-            {busy ? '…' : product ? t('حفظ التعديلات', 'Save changes') : t('حفظ المنتج', 'Save product')}
-          </button>
+          <div className="flex gap-2">
+            <Button type="submit" busy={busy}>{product ? t('حفظ التعديلات', 'Save changes') : t('حفظ المنتج والمتابعة', 'Save and continue')}</Button>
+            <Button variant="secondary" onClick={() => modal?.requestClose()}>{product ? t('إغلاق', 'Close') : t('إلغاء', 'Cancel')}</Button>
+          </div>
         </div>
       </form>
     </section>
@@ -249,7 +250,7 @@ function Variants({ product, onChanged }: { product: AdminProduct; onChanged: ()
 
   const select = 'border border-[#dedbd5] rounded-lg p-2 bg-white text-xs';
   return (
-    <section className="bg-white p-6 sm:p-8 rounded-2xl border border-[#e9e4dc] shadow-2xs space-y-4">
+    <section className={`${ui.card} p-5 sm:p-6 space-y-4`}>
       <h3 className="text-lg font-serif font-bold text-[#142b4a]">{t('المقاسات والألوان والمخزون', 'Sizes, colors & stock')}</h3>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -321,8 +322,9 @@ function VariantRow({ variant, basePrice, onChanged }: { variant: AdminVariant; 
     }
   };
 
+  const confirm = useConfirm();
   const remove = async () => {
-    if (!window.confirm(t('حذف هذا المقاس/اللون؟', 'Delete this variant?'))) return;
+    if (!(await confirm({ title: t('حذف هذا المقاس/اللون؟', 'Delete this variant?'), message: t(`${variant.size} · ${variant.sku}`, `${variant.size} · ${variant.sku}`), confirmLabel: t('حذف', 'Delete'), danger: true }))) return;
     try {
       await deleteVariant(variant.id);
       onChanged();
@@ -382,8 +384,9 @@ function Photos({ product, onChanged }: { product: AdminProduct; onChanged: () =
     onChanged();
   };
 
+  const confirm = useConfirm();
   const remove = async (id: number) => {
-    if (!window.confirm(t('حذف هذه الصورة؟', 'Delete this photo?'))) return;
+    if (!(await confirm({ title: t('حذف هذه الصورة؟', 'Delete this photo?'), message: t('سيتم حذفها من المتجر نهائيًا.', 'It will be removed from the shop for good.'), confirmLabel: t('حذف', 'Delete'), danger: true }))) return;
     try {
       await deleteImage(id);
       onChanged();
@@ -393,7 +396,7 @@ function Photos({ product, onChanged }: { product: AdminProduct; onChanged: () =
   };
 
   return (
-    <section className="bg-white p-6 sm:p-8 rounded-2xl border border-[#e9e4dc] shadow-2xs space-y-4">
+    <section className={`${ui.card} p-5 sm:p-6 space-y-4`}>
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-serif font-bold text-[#142b4a]">{t('صور المنتج', 'Product photos')}</h3>
         <span className="text-xs text-[#77808b]">{product.images.length} / {MAX_IMAGES}</span>

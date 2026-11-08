@@ -289,3 +289,13 @@ html[lang="en"] * {
   }
   .reveal-init, .reveal-left, .reveal-right, .reveal-scale { opacity: 1 !important; transform: none !important; }
 }
+
+/* Dashboard pop-ups: the page behind darkens and blurs so the owner focuses on the form. */
+.zz-modal::backdrop {
+  background: rgba(20, 43, 74, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.zz-modal[open] { animation: zz-pop 180ms ease-out; }
+@keyframes zz-pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+body:has(dialog.zz-modal[open]) { overflow: hidden; }

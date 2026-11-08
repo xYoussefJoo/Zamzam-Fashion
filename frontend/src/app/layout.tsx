@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo, Tajawal, DM_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -23,10 +23,21 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+// The live domain, set in Vercel (NEXT_PUBLIC_SITE_URL); share links and the sitemap are built from it.
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const title = "زمزم فاشون | Zamzam Fashion";
+const description = "أزياء نسائية راقية وتفصيل خاص على مقاسك | Curated women's fashion and custom tailoring in Egypt";
+
 export const metadata: Metadata = {
-  title: "زمزم فاشون | Zamzam Fashion",
-  description: "أزياء نسائية راقية وتفصيل خاص على مقاسك | Curated women's fashion and custom tailoring in Egypt",
+  metadataBase: new URL(siteUrl),
+  title,
+  description,
+  // The share image is app/opengraph-image.jpg (WhatsApp, Facebook, X previews).
+  openGraph: { type: "website", siteName: "Zamzam Fashion", locale: "ar_EG", title, description, url: "/" },
+  twitter: { card: "summary_large_image", title, description },
 };
+
+export const viewport: Viewport = { themeColor: "#142b4a" };
 
 export default function RootLayout({
   children,

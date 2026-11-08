@@ -9,6 +9,7 @@ import {
   type AdminOrder, type OrderStatus,
 } from '@/lib/admin';
 import { pick, statusLabel } from '@/lib/shop';
+import { Button, Modal, useConfirm, useModalDirty } from '@/components/admin/ui';
 
 const ALL_STATUSES = Object.keys(statusLabel) as OrderStatus[];
 
@@ -137,6 +138,9 @@ function OrderDetail({ id, onBack }: { id: number; onBack: () => void }) {
   const { data: order, error, reload } = useApi(() => getAdminOrder(id), [id]);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [lastLink, setLastLink] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   if (error) {
     return (
@@ -151,7 +155,11 @@ function OrderDetail({ id, onBack }: { id: number; onBack: () => void }) {
   if (!order) return <div className="h-64 rounded-2xl bg-[#f7f3eb] animate-pulse" />;
 
   const move = async (to: OrderStatus) => {
-    if (to === 'Cancelled' && !window.confirm(t('إلغاء هذا الطلب؟ ستعود القطع للمخزون.', 'Cancel this order? Its pieces go back to stock.'))) return;
+    if (to === 'Cancelled' && !(await confirm({
+      title: t('إلغاء هذا الطلب؟', 'Cancel this order?'),
+      message: order.type === 'Ready' ? t('ستعود القطع للمخزون.', 'Its pieces go back to stock.') : undefined,
+      confirmLabel: t('إلغاء الطلب', 'Cancel order'), danger: true,
+    }))) return;
     setBusy(true);
     try {
       await changeOrderStatus(order.id, to, note.trim() || null);
@@ -271,7 +279,18 @@ function OrderDetail({ id, onBack }: { id: number; onBack: () => void }) {
 
           {/* Quote (custom orders waiting for a price) */}
           {tailoring && (order.status === 'AwaitingQuote' || order.status === 'QuoteSent') && (
-            <QuoteForm order={order} onSent={reload} />
+            <section className={`${card} space-y-3 border-2 border-[#b99664]`}>
+              <h4 className="font-bold text-[#142b4a]">{t('السعر النهائي', 'Final price')}</h4>
+              <p className="text-xs text-[#77808b]">{order.status === 'QuoteSent' ? t('أُرسل سعر وبانتظار رد العميلة. يمكنك تعديله.', 'A price was sent; waiting for the customer. You can change it.') : t('أكدي السعر أو عدليه وأرسليه للعميلة.', 'Confirm the price or change it and send it to the customer.')}</p>
+              <Button variant="gold" className="w-full" onClick={() => setQuoteOpen(true)}>{order.status === 'QuoteSent' ? t('تعديل السعر', 'Change price') : t('إرسال السعر', 'Send price')}</Button>
+            </section>
+          )}
+          {lastLink && (
+            <section className={`${card} space-y-2`}>
+              <h4 className="font-bold text-[#142b4a] text-sm">{t('رابط موافقة العميلة', 'Customer approval link')}</h4>
+              <p className="text-[11px] text-[#5e605b] break-all font-mono select-all" dir="ltr">{lastLink}</p>
+              <Button size="sm" variant="secondary" onClick={() => void navigator.clipboard?.writeText(lastLink).then(() => showToast(t('تم النسخ', 'Copied'), 'success'), () => {})}>{t('نسخ لإرساله واتساب', 'Copy to send on WhatsApp')}</Button>
+            </section>
           )}
 
           {/* Next step */}
@@ -292,11 +311,15 @@ function OrderDetail({ id, onBack }: { id: number; onBack: () => void }) {
           )}
         </div>
       </div>
+
+      <Modal open={quoteOpen} title={t('السعر النهائي للتفصيل', 'Final tailoring price')} subtitle={order.number} onClose={() => setQuoteOpen(false)}>
+        <QuoteForm order={order} onSent={(link) => { setQuoteOpen(false); setLastLink(link); reload(); }} />
+      </Modal>
     </div>
   );
 }
 
-function QuoteForm({ order, onSent }: { order: AdminOrder; onSent: () => void }) {
+function QuoteForm({ order, onSent }: { order: AdminOrder; onSent: (customerLink: string | null) => void }) {
   const t = useZamzamStore((state) => state.t);
   const money = useZamzamStore((state) => state.money);
   const showToast = useZamzamStore((state) => state.showToast);
@@ -305,21 +328,21 @@ function QuoteForm({ order, onSent }: { order: AdminOrder; onSent: () => void })
   const [note, setNote] = useState(tailoring.quoteNote ?? '');
   const [days, setDays] = useState(7);
   const [busy, setBusy] = useState(false);
-  const [link, setLink] = useState<string | null>(null);
+  const initialPrice = String(tailoring.quotedPrice ?? tailoring.estimatedPrice);
+  const modal = useModalDirty(price !== initialPrice || note !== (tailoring.quoteNote ?? '') || days !== 7);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
       const result = await sendQuote(order.id, Number(price), note.trim() || null, days);
-      setLink(result.customerLink);
       showToast(
         result.order.status === 'QuoteApproved'
           ? t('نفس السعر التقديري: تم اعتماده مباشرة', 'Same as the estimate: approved right away')
           : t('تم إرسال السعر للعميلة للموافقة', 'Price sent to the customer for approval'),
         'success',
       );
-      onSent();
+      onSent(result.customerLink);
     } catch (err) {
       showToast(errorText(err, t), 'error');
     } finally {
@@ -328,8 +351,7 @@ function QuoteForm({ order, onSent }: { order: AdminOrder; onSent: () => void })
   };
 
   return (
-    <form onSubmit={submit} className="bg-[#fbf8f2] rounded-2xl border-2 border-[#b99664] p-6 space-y-3">
-      <h4 className="font-bold text-[#142b4a]">{t('تأكيد السعر', 'Confirm the price')}</h4>
+    <form onSubmit={submit} className="space-y-4">
       <p className="text-xs text-[#77808b]">
         {t(`التقدير ${money(tailoring.estimatedPrice)}. نفس السعر = اعتماد مباشر؛ سعر مختلف = يُرسل للعميلة للموافقة.`,
           `Estimate ${money(tailoring.estimatedPrice)}. Same price = approved now; a different price is sent to the customer to approve.`)}
@@ -346,14 +368,10 @@ function QuoteForm({ order, onSent }: { order: AdminOrder; onSent: () => void })
         <span>{t('صالح لمدة (أيام)', 'Valid for (days)')}</span>
         <input type="number" required min={1} max={30} value={days} onChange={(e) => setDays(Number(e.target.value) || 7)} className="border border-[#e8e3d9] rounded-xl p-2.5 text-sm bg-white" />
       </label>
-      <button type="submit" disabled={busy} className="w-full py-2.5 rounded-lg bg-[#142b4a] hover:bg-[#1e3a61] disabled:opacity-60 text-white text-xs font-bold cursor-pointer">
-        {busy ? '…' : t('إرسال السعر', 'Send price')}
-      </button>
-      {link && (
-        <p className="text-[11px] text-[#5e605b] break-all">
-          {t('رابط الموافقة (يُرسل بالبريد، ويمكن نسخه للواتساب):', 'Approval link (emailed; you can also copy it to WhatsApp):')} <span dir="ltr" className="font-mono select-all">{link}</span>
-        </p>
-      )}
+      <div className="flex justify-end gap-2 pt-2 border-t border-[#efe9df]">
+        <Button variant="secondary" onClick={() => modal?.requestClose()}>{t('إلغاء', 'Cancel')}</Button>
+        <Button type="submit" variant="gold" busy={busy}>{t('إرسال السعر', 'Send price')}</Button>
+      </div>
     </form>
   );
 }

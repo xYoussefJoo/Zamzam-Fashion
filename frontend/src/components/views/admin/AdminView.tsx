@@ -17,6 +17,7 @@ import AdminZones from './AdminZones';
 import AdminTailoringCatalog from './AdminTailoringCatalog';
 import AdminPricing from './AdminPricing';
 import AdminPassword from './AdminPassword';
+import { ConfirmProvider, Modal } from '@/components/admin/ui';
 
 export default function AdminView() {
   const user = useZamzamStore((state) => state.user);
@@ -26,7 +27,8 @@ export default function AdminView() {
   const logout = useZamzamStore((state) => state.logout);
   const adminTab = useZamzamStore((state) => state.adminTab);
   const setAdminTab = useZamzamStore((state) => state.setAdminTab);
-  const setEditingProductId = useZamzamStore((state) => state.setEditingProductId);
+  const productModal = useZamzamStore((state) => state.productModal);
+  const closeProductModal = useZamzamStore((state) => state.closeProductModal);
   const go = useZamzamStore((state) => state.go);
   const t = useZamzamStore((state) => state.t);
 
@@ -47,10 +49,7 @@ export default function AdminView() {
   const tab: AdminTab = user.mustChangePassword ? 'password' : adminTab;
 
   const adminBack = () => {
-    if (tab === 'editor') {
-      setAdminTab('products');
-      setEditingProductId(null);
-    } else if (tab !== 'overview') {
+    if (tab !== 'overview') {
       setAdminTab('overview');
     } else {
       go('home');
@@ -64,12 +63,13 @@ export default function AdminView() {
   ];
 
   return (
+    <ConfirmProvider>
     <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] min-h-[calc(100vh-120px)] bg-[#f8f6f2]">
       <aside className="bg-[#1e3046] text-white p-6 flex flex-col justify-between border-b md:border-b-0 md:border-e border-white/10">
         <div className="space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-white/15">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={assetPath('assets/logo-transparent.png')} alt="Zamzam Fashion" className="w-12 h-12 object-contain" />
+            <img src={assetPath('assets/logo-mark-160.webp')} alt="Zamzam Fashion" className="w-12 h-12 object-contain" />
             <div>
               <strong className="block text-sm font-serif font-bold text-white">Zamzam Fashion</strong>
               <small className="text-[9px] tracking-wider text-[#d9c5a4] uppercase font-semibold">STORE MANAGEMENT</small>
@@ -80,7 +80,7 @@ export default function AdminView() {
             <div key={en} className="space-y-1">
               <div className="text-[10px] tracking-widest uppercase font-bold text-[#c1c9d1] px-3 pb-1">{t(ar, en)}</div>
               {keys.map((key) => {
-                const isActive = tab === key || (tab === 'editor' && key === 'products');
+                const isActive = tab === key;
                 return (
                   <button
                     key={key}
@@ -89,10 +89,7 @@ export default function AdminView() {
                     className={`w-full text-start flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                       isActive ? 'bg-[#c4a274] text-[#17283e]' : 'text-[#d7dfe7] hover:bg-white/10'
                     }`}
-                    onClick={() => {
-                      setAdminTab(key);
-                      setEditingProductId(null);
-                    }}
+                    onClick={() => setAdminTab(key)}
                   >
                     <span className="w-2 h-2 rounded-full bg-current opacity-60" />
                     <span>{t(...adminTabsLabels[key])}</span>
@@ -119,7 +116,7 @@ export default function AdminView() {
           <div>
             <span className="text-xs font-bold tracking-widest text-[#9c7c54] uppercase">ZAMZAM FASHION / ADMIN</span>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#142b4a] mt-0.5">
-              {tab === 'editor' ? t('بيانات المنتج', 'Product editor') : t(...(adminTabsLabels[tab] || adminTabsLabels.overview))}
+              {t(...(adminTabsLabels[tab] || adminTabsLabels.overview))}
             </h2>
           </div>
           <div className="flex items-center gap-2">
@@ -143,7 +140,6 @@ export default function AdminView() {
         {tab === 'overview' && <AdminOverview />}
         {tab === 'categories' && <AdminCategories />}
         {tab === 'products' && <AdminProducts />}
-        {tab === 'editor' && <AdminProductEditor />}
         {tab === 'orders' && <AdminOrders />}
         {tab === 'colors' && <AdminColors />}
         {tab === 'zones' && <AdminZones />}
@@ -153,6 +149,18 @@ export default function AdminView() {
         {tab === 'password' && <AdminPassword />}
       </main>
     </div>
+
+    {/* The product pop-up: opened from Products, Overview or a category's “＋ Add item”. */}
+    <Modal
+      open={!!productModal}
+      size="xl"
+      title={productModal?.id ? t('تعديل المنتج', 'Edit product') : t('منتج جديد', 'New product')}
+      subtitle={t('البيانات، ثم المقاسات والمخزون، ثم الصور', 'Details, then sizes & stock, then photos')}
+      onClose={closeProductModal}
+    >
+      <AdminProductEditor />
+    </Modal>
+    </ConfirmProvider>
   );
 }
 

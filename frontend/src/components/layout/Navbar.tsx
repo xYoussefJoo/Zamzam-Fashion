@@ -52,7 +52,7 @@ export default function Navbar() {
           {!logoError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={assetPath('assets/logo-transparent.png')}
+              src={assetPath('assets/logo-mark-160.webp')}
               alt="Zamzam Fashion"
               className="w-13 h-13 sm:w-15 sm:h-15 object-contain transition-transform duration-300 group-hover:scale-105"
               onError={() => setLogoError(true)}
@@ -67,7 +67,7 @@ export default function Navbar() {
             <b className="text-lg sm:text-xl font-bold tracking-tight text-[#142b4a] group-hover:text-[#b99664] transition-colors duration-200">
               Zamzam Fashion
             </b>
-            <small className="text-[9px] sm:text-[10px] tracking-widest text-[#b99664] font-semibold uppercase">
+            <small className="text-[9px] sm:text-[10px] tracking-widest text-[#8a6d43] font-semibold uppercase">
               MADE FOR YOUR STYLE
             </small>
           </div>

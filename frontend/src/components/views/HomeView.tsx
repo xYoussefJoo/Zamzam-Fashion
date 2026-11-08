@@ -311,7 +311,8 @@ export default function HomeView() {
           <div className="relative z-10 hidden md:flex items-center justify-center animate-float reveal-right delay-200">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={assetPath('assets/logo-transparent.png')}
+              src={assetPath('assets/logo-mark-448.webp')}
+              loading="lazy"
               alt="Zamzam Fashion"
               className="w-48 h-48 lg:w-56 lg:h-56 object-contain drop-shadow-md"
             />
