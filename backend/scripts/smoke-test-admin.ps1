@@ -5,6 +5,9 @@
 
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+# curl.exe output is UTF-8: without this, Windows PowerShell reads it with the old console code page, and
+# Arabic text that a test reads and saves back gets garbled in the database.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $api = 'http://localhost:5055'
 $csrf = 'X-Requested-With: zamzam-admin'
 $script:cookie = $null

@@ -5,16 +5,21 @@
 # Start the API first (dotnet run --project src/Zamzam.Api), then from the backend folder:
 #   powershell -ExecutionPolicy Bypass -File .\scripts\full-test.ps1               # everything (asks the owner password)
 #   powershell -ExecutionPolicy Bypass -File .\scripts\full-test.ps1 -PublicOnly   # no login: storefront + security only
+#   powershell -ExecutionPolicy Bypass -File .\scripts\full-test.ps1 -UseUserSecrets   # owner login from this PC's user-secrets
 #
 # Rate limits are real: wait 10 minutes after another test run that placed orders (10 orders per 10 minutes per IP).
 
 param(
     [string]$Api = 'http://localhost:5055',
-    [switch]$PublicOnly
+    [switch]$PublicOnly,
+    [switch]$UseUserSecrets   # take the owner login from this PC's user-secrets instead of asking
 )
 
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+# curl.exe output is UTF-8: without this, Windows PowerShell reads it with the old console code page, and
+# Arabic text that a test reads and saves back gets garbled in the database.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $script:cookie = $null
 $script:results = New-Object System.Collections.Generic.List[object]
 $script:section = ''
@@ -76,7 +81,16 @@ function Same($a, $b) { (ConvertTo-Json -InputObject $a -Depth 10 -Compress) -eq
 try {
     Write-Host ''
     Write-Host "Zamzam Fashion - full API test ($Api)" -ForegroundColor Cyan
-    if (-not $PublicOnly) {
+    if (-not $PublicOnly -and $UseUserSecrets) {
+        # The owner login stored on this PC by set-secrets.ps1; read straight into the login, never printed.
+        $json = (& dotnet user-secrets list --json --project (Join-Path $PSScriptRoot '..\src\Zamzam.Api')) -join "`n"
+        $secrets = ($json -replace '//BEGIN|//END', '') | ConvertFrom-Json
+        $email = $secrets.'Seed:OwnerEmail'
+        if (-not $email -or -not $secrets.'Seed:OwnerPassword') { throw 'No owner login in user-secrets: run without -UseUserSecrets.' }
+        $secure = ConvertTo-SecureString $secrets.'Seed:OwnerPassword' -AsPlainText -Force
+        $secrets = $null; $json = $null
+    }
+    elseif (-not $PublicOnly) {
         $email = Read-Host 'Owner email [xyousefjoo@gmail.com]'
         if (-not $email) { $email = 'xyousefjoo@gmail.com' }
         $secure = Read-Host 'Owner password (hidden)' -AsSecureString
