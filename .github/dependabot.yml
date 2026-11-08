@@ -27,7 +27,7 @@ updates:
       frontend-minor:
         update-types: [minor, patch]
     ignore:
-      # @types/node follows the Node version we run (24), not the newest Node.
+      # @types/node stays on the major the frontend targets (20 today), not the newest Node.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
       # Big build/lint tool jumps need the teammate's decision, not a bot's.
