@@ -2,15 +2,16 @@
 
 import React from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
-import { assetPath } from '@/data/seed';
+import { assetPath } from '@/lib/labels';
 
 export default function Footer() {
-  const data = useZamzamStore((state) => state.data);
+  const site = useZamzamStore((state) => state.site);
   const lang = useZamzamStore((state) => state.lang);
   const t = useZamzamStore((state) => state.t);
-  const q = data.settings;
+  const contact = site?.contact;
+  const social = site?.social;
 
-  const validLink = (url: string, label: string) =>
+  const validLink = (url: string | null | undefined, label: string) =>
     url && /^https:\/\//i.test(url) ? (
       <a
         href={url}
@@ -60,30 +61,30 @@ export default function Footer() {
               {t('تواصلي معنا', 'Contact us')}
             </b>
             <div className="flex flex-col gap-2 text-sm text-white/80">
-              {q.phone && (
+              {contact?.phone && (
                 <div>
-                  <a href={`tel:${q.phone}`} className="hover:text-[#b99664] transition-colors">
-                    {q.phone}
+                  <a href={`tel:${contact.phone}`} className="hover:text-[#b99664] transition-colors">
+                    {contact.phone}
                   </a>
                 </div>
               )}
-              {q.email && (
+              {contact?.email && (
                 <div>
-                  <a href={`mailto:${q.email}`} className="hover:text-[#b99664] transition-colors">
-                    {q.email}
+                  <a href={`mailto:${contact.email}`} className="hover:text-[#b99664] transition-colors">
+                    {contact.email}
                   </a>
                 </div>
               )}
-              {q.whatsapp && (
+              {contact?.whatsApp && (
                 <div>
                   {validLink(
-                    `https://wa.me/${String(q.whatsapp).replace(/\D/g, '')}`,
+                    `https://wa.me/${String(contact.whatsApp).replace(/\D/g, '')}`,
                     'WhatsApp'
                   )}
                 </div>
               )}
               <p className="text-xs text-white/60 pt-1 leading-relaxed">
-                {lang === 'ar' ? q.addressAr : q.addressEn}
+                {lang === 'ar' ? contact?.addressAr : contact?.addressEn}
               </p>
             </div>
           </div>
@@ -94,9 +95,9 @@ export default function Footer() {
               {t('تابعينا', 'Follow us')}
             </b>
             <div className="flex flex-col gap-2 text-sm">
-              {validLink(q.facebook, 'Facebook')}
-              {validLink(q.instagram, 'Instagram')}
-              {validLink(q.tiktok, 'TikTok')}
+              {validLink(social?.facebook, 'Facebook')}
+              {validLink(social?.instagram, 'Instagram')}
+              {validLink(social?.tikTok, 'TikTok')}
             </div>
           </div>
         </div>
@@ -107,7 +108,7 @@ export default function Footer() {
 
           <div className="flex items-center gap-2">
             <span className="text-white/50">{t('تصميم وتطوير بواسطة:', 'Powered by:')}</span>
-            <a href="https://itkernelpanic.com/" target="_blank">
+            <a href="https://itkernelpanic.com/" target="_blank" rel="noopener noreferrer">
               <div className={`flex  ${lang === 'ar' ? 'flex-row-reverse' : 'flex-row'} items-center gap-1.5 font-bold bg-white px-4 py-1 rounded-full`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

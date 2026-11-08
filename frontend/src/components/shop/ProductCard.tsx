@@ -1,55 +1,57 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Product } from '@/types/zamzam';
 import { useZamzamStore } from '@/store/useZamzamStore';
-import { assetPath } from '@/data/seed';
+import { pick, type ProductCard as Card } from '@/lib/shop';
 
 interface ProductCardProps {
-  product: Product;
+  product: Card;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
   const lang = useZamzamStore((state) => state.lang);
-  const data = useZamzamStore((state) => state.data);
   const money = useZamzamStore((state) => state.money);
   const t = useZamzamStore((state) => state.t);
   const openProduct = useZamzamStore((state) => state.openProduct);
 
   const [imgError, setImgError] = useState<boolean>(false);
 
-  const category = data.categories.find(
-    (c) => Number(c.id) === Number(product.categoryId)
-  );
-  const categoryName = category ? category[lang] : 'Fashion';
-  const title = product[lang] || product.ar;
-  const isOutOfStock = product.stock <= 0;
-
-  const handleCardClick = () => {
-    openProduct(product.id);
-  };
+  const categoryName = pick(lang, product.category.nameAr, product.category.nameEn) || 'Fashion';
+  const title = pick(lang, product.nameAr, product.nameEn);
+  const isOutOfStock = !product.inStock;
+  const hasRange = product.maxPrice > product.minPrice;
+  const image = product.image;
 
   return (
     <article
-      onClick={handleCardClick}
-      className="group rounded-2xl bg-white border border-[#e8e3d9] overflow-hidden flex flex-col h-full shadow-xs hover:shadow-xl transition-all duration-500 hover:-translate-y-1.5 cursor-pointer"
+      onClick={() => openProduct(product.slug)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openProduct(product.slug);
+        }
+      }}
+      role="link"
+      tabIndex={0}
+      aria-label={title}
+      className="group rounded-2xl bg-white border border-[#e8e3d9] overflow-hidden flex flex-col h-full shadow-xs hover:shadow-xl transition-all duration-500 hover:-translate-y-1.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b99664]"
     >
       {/* Product Image Area */}
-      <div
-        className={`relative h-[290px] sm:h-[330px] bg-[#f7f3eb] overflow-hidden flex items-center justify-center ${product.tone || ''}`}
-      >
-        {product.image && !imgError ? (
+      <div className="relative h-[290px] sm:h-[330px] bg-[#f7f3eb] overflow-hidden flex items-center justify-center">
+        {image && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={assetPath(product.image)}
-            alt={title}
+            src={image.url}
+            srcSet={image.srcSet}
+            sizes="(min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw"
+            alt={pick(lang, image.altAr, image.altEn) || title}
             loading="lazy"
             onError={() => setImgError(true)}
             className="w-full h-full object-cover object-top group-hover:scale-[1.07] transition-transform duration-700 ease-out"
           />
         ) : (
-          <span className="text-6xl select-none group-hover:scale-110 transition-transform duration-500">
-            {product.emoji || '👗'}
+          <span className="text-6xl select-none group-hover:scale-110 transition-transform duration-500" aria-hidden="true">
+            👗
           </span>
         )}
 
@@ -57,13 +59,6 @@ export default function ProductCard({ product }: ProductCardProps) {
         <span className="absolute top-3.5 start-3.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white/90 backdrop-blur-sm text-[#142b4a] shadow-xs">
           {categoryName}
         </span>
-
-        {/* Low Stock Warning Badge */}
-        {product.stock > 0 && product.stock <= 3 && (
-          <span className="absolute top-3.5 end-3.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#b99664] text-white shadow-xs">
-            {t('قطع محدودة', 'Few left')}
-          </span>
-        )}
 
         {/* Hover Action Pill */}
         <div className="absolute inset-0 bg-[#142b4a]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
@@ -89,20 +84,29 @@ export default function ProductCard({ product }: ProductCardProps) {
           <h3 className="text-base font-bold text-[#142b4a] leading-snug line-clamp-2 min-h-[2.6em] group-hover:text-[#b99664] transition-colors duration-200">
             {title}
           </h3>
-          <p className="text-xs text-[#77808b] line-clamp-2 min-h-[2.2em] leading-relaxed mt-1">
-            {product.description || '\u00A0'}
-          </p>
+          {/* Sizes and colors it comes in */}
+          <div className="flex items-center gap-2 mt-1.5 min-h-[2.2em]">
+            <div className="flex -space-x-1 rtl:space-x-reverse">
+              {product.colors.slice(0, 5).map((c) => (
+                <span
+                  key={c.id}
+                  title={pick(lang, c.nameAr, c.nameEn)}
+                  className="w-3.5 h-3.5 rounded-full border border-white ring-1 ring-black/10"
+                  style={{ backgroundColor: c.hex }}
+                />
+              ))}
+            </div>
+            <span className="text-xs text-[#77808b] truncate">{product.sizes.join(' · ')}</span>
+          </div>
         </div>
 
         {/* Price & Action Link */}
         <div className="flex items-center justify-between pt-3 border-t border-[#e8e3d9] mt-2">
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-[#77808b] uppercase tracking-wider">
-              {t('السعر', 'PRICE')}
+              {hasRange ? t('يبدأ من', 'FROM') : t('السعر', 'PRICE')}
             </span>
-            <span className="font-extrabold text-[#b99664] text-lg tracking-tight">
-              {money(product.price)}
-            </span>
+            <span className="font-extrabold text-[#b99664] text-lg tracking-tight">{money(product.minPrice)}</span>
           </div>
 
           <span className="text-xs font-bold text-[#142b4a] group-hover:text-[#b99664] group-hover:translate-x-1 transition-all flex items-center gap-1">

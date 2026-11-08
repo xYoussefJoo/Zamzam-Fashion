@@ -1,143 +1,44 @@
+// UI-only types. Everything the API sends or receives is typed in src/types/api.ts (generated, see npm run api:types).
+
 export type Language = 'ar' | 'en';
 
-export type PageId = 'home' | 'shop' | 'custom' | 'orders' | 'cart' | 'admin' | 'product';
+export type PageId = 'home' | 'shop' | 'custom' | 'orders' | 'cart' | 'admin' | 'product' | 'track';
 
-export type AdminTab = 'overview' | 'categories' | 'products' | 'editor' | 'orders' | 'settings';
+export type AdminTab =
+  | 'overview'
+  | 'categories'
+  | 'products'
+  | 'editor'
+  | 'orders'
+  | 'colors'
+  | 'zones'
+  | 'tailoring'
+  | 'pricing'
+  | 'settings'
+  | 'password';
 
-export interface Category {
-  id: number;
-  ar: string;
-  en: string;
-  parentId?: number | null;
-}
+// Where the app opens: the plain shop page, or one of the addresses that emails and shares link to.
+export type InitialRoute =
+  | { page: 'home' }
+  | { page: 'product'; slug: string }
+  | { page: 'track'; number: string; token: string }
+  | { page: 'admin'; orderId?: number };
 
-export interface Product {
-  id: number;
-  ar: string;
-  en: string;
-  categoryId: number;
-  price: number;
-  stock: number;
-  sizes: string[];
-  colors: string[];
-  image?: string;
-  visible: boolean;
-  emoji?: string;
-  tone?: string;
-  description?: string;
-}
-
-export interface CartItem {
-  id: number;
-  qty: number;
-  size: string;
-  color: string;
-}
-
-export interface OrderItem {
-  id: number;
-  name: string;
+// One line in the bag: a single variant (size + color) of a product, with what the bag needs to show it.
+export interface CartLine {
+  variantId: number;
+  productSlug: string;
+  nameAr: string;
   nameEn: string;
-  qty: number;
+  size: string;
+  colorNameAr: string;
+  colorNameEn: string;
+  colorHex: string;
   price: number;
-  size: string;
-  color: string;
-  categoryId: number;
-}
-
-export type OrderStatus =
-  | 'review'
-  | 'quoted'
-  | 'approved'
-  | 'production'
-  | 'quality'
-  | 'shipping'
-  | 'done'
-  | 'cancelled';
-
-export interface BaseOrder {
-  id: number;
-  customer: string;
-  phone: string;
-  status: OrderStatus;
-  date: string;
-}
-
-export interface ReadyOrder extends BaseOrder {
-  type: 'ready';
-  governorate: string;
-  city: string;
-  address: string;
-  notes?: string;
-  paymentMethod: 'cod';
-  paymentStatus: 'unpaid' | 'paid';
-  deliveryFee: number;
-  subtotal: number;
-  items: OrderItem[];
-  total: number;
-}
-
-export interface CustomOrder extends BaseOrder {
-  type: 'custom';
-  kind: string;
-  model: string;
-  fabric: string;
-  color: string;
-  fit: string;
-  size: string;
-  measures: Record<string, number>;
-  notes?: string;
-  image?: string;
-  total: null | number;
-}
-
-export type Order = ReadyOrder | CustomOrder;
-
-export interface StoreSettings {
-  bannerAr: string;
-  bannerEn: string;
-  featured?: boolean;
-  deliveryFee: number;
-  collectionAr: string;
-  collectionEn: string;
-  collectionEnabled: boolean;
-  phone: string;
-  whatsapp: string;
-  email: string;
-  addressAr: string;
-  addressEn: string;
-  facebook: string;
-  instagram: string;
-  tiktok: string;
-}
-
-export interface StoreData {
-  categories: Category[];
-  products: Product[];
-  orders: Order[];
-  cart: CartItem[];
-  settings: StoreSettings;
-}
-
-export interface TailoringStyle {
-  id: string;
-  kind: string;
-  ar: string;
-  en: string;
-  fabric: string;
-  fit: string;
-}
-
-export interface GarmentKind {
-  id: string;
-  ar: string;
-  en: string;
-}
-
-export interface MeasurementField {
-  key: string;
-  ar: string;
-  en: string;
+  imageUrl: string | null;
+  qty: number;
+  // Pieces left when the shop said "only N left" (null = more than 5); checkout re-checks anyway.
+  stock: number | null;
 }
 
 export interface ToastMessage {
