@@ -16,3 +16,6 @@ desktop.ini
 
 # Output of backend/scripts/full-test.ps1
 backend/test-report.html
+
+# deploy package (build output)
+backend/zamzam-api.zip
