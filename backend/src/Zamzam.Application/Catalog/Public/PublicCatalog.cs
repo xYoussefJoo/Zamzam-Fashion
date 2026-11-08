@@ -71,10 +71,10 @@ public sealed class SearchProductsHandler(IAppDbContext db, IImageStorage storag
 
         if (!string.IsNullOrWhiteSpace(query.Category))
         {
-            // A main category includes its sub-categories.
-            var categoryIds = await db.Categories
+            // A main category includes its sub-categories. Kept as a subquery, so it costs no extra round trip.
+            var categoryIds = db.Categories
                 .Where(c => c.IsVisible && (c.Slug == query.Category || (c.Parent != null && c.Parent.Slug == query.Category)))
-                .Select(c => c.Id).ToListAsync(ct);
+                .Select(c => c.Id);
             products = products.Where(p => categoryIds.Contains(p.CategoryId));
         }
 
@@ -122,7 +122,10 @@ public sealed class SearchProductsHandler(IAppDbContext db, IImageStorage storag
         var rows = await priced.Skip((page - 1) * pageSize).Take(pageSize)
             .Select(x => new ShopQueries.ProductRow(x.Product.Id, x.Product.Slug, x.Product.NameAr, x.Product.NameEn,
                 x.Product.BasePrice, x.Product.CreatedAt,
-                new CategoryRef(x.Product.Category!.Id, x.Product.Category.Slug, x.Product.Category.NameAr, x.Product.Category.NameEn)))
+                new CategoryRef(x.Product.Category!.Id, x.Product.Category.Slug, x.Product.Category.NameAr, x.Product.Category.NameEn),
+                // One main photo per product, so it joins into this query instead of costing a query of its own.
+                x.Product.Images.Where(i => i.SortOrder == 0)
+                    .Select(i => new ShopQueries.ImageRow(i.Id, i.StorageKey, i.AltAr, i.AltEn, i.SortOrder)).FirstOrDefault()))
             .ToListAsync(ct);
 
         var cards = await ShopQueries.ToCardsAsync(db, storage, rows, ct);
@@ -163,7 +166,10 @@ public sealed class GetProductBySlugHandler(IAppDbContext db, IImageStorage stor
 
 internal static class ShopQueries
 {
-    public sealed record ProductRow(int Id, string Slug, string NameAr, string NameEn, decimal BasePrice, DateTime CreatedAt, CategoryRef Category);
+    public sealed record ProductRow(int Id, string Slug, string NameAr, string NameEn, decimal BasePrice, DateTime CreatedAt,
+        CategoryRef Category, ImageRow? MainImage);
+
+    public sealed record ImageRow(int Id, string StorageKey, string? AltAr, string? AltEn, int SortOrder);
 
     // Visible, not deleted, in a visible category whose parent (if any) is visible too.
     public static IQueryable<Product> VisibleProducts(IAppDbContext db) =>
@@ -182,18 +188,13 @@ internal static class ShopQueries
                 Color = new ColorDto(v.Color!.Id, v.Color.NameAr, v.Color.NameEn, v.Color.Hex) })
             .ToListAsync(ct);
 
-        var mainImages = await db.ProductImages.AsNoTracking()
-            .Where(i => ids.Contains(i.ProductId) && i.SortOrder == 0)
-            .Select(i => new { i.ProductId, i.Id, i.StorageKey, i.AltAr, i.AltEn, i.SortOrder })
-            .ToListAsync(ct);
-
         return rows.Select(row =>
         {
             var own = variants.Where(v => v.ProductId == row.Id).ToList();
             var inStock = own.Where(v => v.Stock > 0).ToList();
             var shown = inStock.Count > 0 ? inStock : own; // out of stock: still show what it comes in
             var prices = own.Select(v => v.PriceOverride ?? row.BasePrice).DefaultIfEmpty(row.BasePrice).ToList();
-            var image = mainImages.FirstOrDefault(i => i.ProductId == row.Id);
+            var image = row.MainImage;
 
             return new ProductCard(row.Id, row.Slug, row.NameAr, row.NameEn, row.Category, prices.Min(), prices.Max(),
                 image is null ? null : storage.ToImageDto(image.Id, image.StorageKey, image.AltAr, image.AltEn, image.SortOrder),

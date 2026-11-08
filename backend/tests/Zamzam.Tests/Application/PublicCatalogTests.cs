@@ -37,6 +37,22 @@ public class PublicCatalogTests
     }
 
     [Fact]
+    public async Task A_card_shows_the_main_photo_and_a_product_without_photos_shows_none()
+    {
+        using var t = TestDb.WithCatalog();
+        var withPhotos = t.AddProduct(t.Trousers, "Wide Trousers", 850, ("M", t.Beige, 3));
+        withPhotos.AddImage("products/1/front", null, "Front");
+        withPhotos.AddImage("products/1/back", null, "Back");
+        t.AddProduct(t.Trousers, "Plain Trousers", 900, ("M", t.Beige, 3));
+        t.Db.SaveChanges();
+
+        var page = await Search(t, new SearchProductsQuery());
+
+        Assert.Equal("Front", page.Items.Single(p => p.NameEn == "Wide Trousers").Image!.AltEn);
+        Assert.Null(page.Items.Single(p => p.NameEn == "Plain Trousers").Image);
+    }
+
+    [Fact]
     public async Task A_main_category_includes_its_sub_categories()
     {
         using var t = TestDb.WithCatalog();
