@@ -80,7 +80,7 @@ export default function AdminView() {
                 required
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
-                className="border border-[#cdbb9e] rounded-lg p-3 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+                className="border border-[#cdbb9e] rounded-lg p-3 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
               />
             </label>
 

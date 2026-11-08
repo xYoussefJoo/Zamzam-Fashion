@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
 import { PageId } from '@/types/zamzam';
 import { navigationLabels, assetPath } from '@/data/seed';
+import { FaShoppingCart } from "react-icons/fa";
+
 
 export default function Navbar() {
   const page = useZamzamStore((state) => state.page);
@@ -113,8 +115,8 @@ export default function Navbar() {
             onClick={() => handleNavClick('cart')}
             className="relative flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#142b4a] text-white hover:bg-[#1e3a61] font-bold text-xs sm:text-sm cursor-pointer shadow-sm transition-all duration-200 hover:shadow-md active:scale-[0.97]"
           >
-            <span className="text-[#b99664] text-sm">🛍</span>
-            <span>{t('السلة', 'Bag')}</span>
+            <span className="text-[#b99664] text-m"><FaShoppingCart /></span>
+            <span>{t('السلة', 'Cart')}</span>
             {cartCount > 0 && (
               <span className="w-5 h-5 rounded-full bg-[#b99664] text-white text-[10px] font-bold flex items-center justify-center animate-pulse-gold">
                 {cartCount}
@@ -180,15 +182,6 @@ export default function Navbar() {
               </button>
             );
           })}
-          <div className="pt-2 border-t border-[#e8dfd1]">
-            <button
-              type="button"
-              onClick={() => handleNavClick('admin')}
-              className="text-xs text-[#77808b] hover:text-[#b99664] font-semibold underline p-1 cursor-pointer transition-colors"
-            >
-              {t('دخول الإدارة', 'Admin access')}
-            </button>
-          </div>
         </div>
       </div>
     </header>

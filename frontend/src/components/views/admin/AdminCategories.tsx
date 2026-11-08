@@ -68,7 +68,7 @@ export default function AdminCategories() {
               required
               value={ar}
               onChange={(e) => setAr(e.target.value)}
-              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             />
           </label>
 
@@ -80,7 +80,7 @@ export default function AdminCategories() {
               required
               value={en}
               onChange={(e) => setEn(e.target.value)}
-              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             />
           </label>
 
@@ -90,7 +90,7 @@ export default function AdminCategories() {
               name="parentId"
               value={parentId}
               onChange={(e) => setParentId(e.target.value)}
-              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             >
               <option value="">
                 {t('قسم رئيسي مستقل', 'Independent main category')}

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { assetPath } from '@/data/seed';
 import ProductCard from '@/components/shop/ProductCard';
 
@@ -11,6 +12,9 @@ export default function HomeView() {
   const go = useZamzamStore((state) => state.go);
   const setFilter = useZamzamStore((state) => state.setFilter);
   const t = useZamzamStore((state) => state.t);
+
+  // Activates animations when elements enter the screen on scroll
+  useScrollReveal();
 
   const cats = [
     { id: 1, img: 'assets/products/pants-beige.jpg' },
@@ -34,22 +38,22 @@ export default function HomeView() {
       <section className="relative grid grid-cols-1 lg:grid-cols-2 min-h-[560px] lg:min-h-[640px] bg-gradient-to-br from-[#f7f3eb] via-[#ede4d4] to-[#e2cfb3] overflow-hidden">
         {/* Copy Column */}
         <div className="relative z-10 p-8 sm:p-14 lg:p-20 flex flex-col items-start justify-center text-start">
-          <span className="text-xs text-[#b99664] font-bold tracking-[0.25em] uppercase animate-fade-in-up">
+          <span className="text-xs text-[#b99664] font-bold tracking-[0.25em] uppercase reveal-init">
             ZAMZAM FASHION / THE NEW EDIT
           </span>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-[4.2rem] font-serif font-bold text-[#142b4a] leading-[1.12] my-4 animate-fade-in-up delay-100">
+          <h1 className="text-4xl sm:text-5xl lg:text-[4.2rem] font-serif font-bold text-[#142b4a] leading-[1.12] my-4 reveal-init delay-100">
             {t('ستايل يشبهك.', 'Made to feel like you.')}
           </h1>
 
-          <p className="text-sm sm:text-base text-[#5e605b] leading-relaxed max-w-lg mb-8 animate-fade-in-up delay-200">
+          <p className="text-sm sm:text-base text-[#5e605b] leading-relaxed max-w-lg mb-8 reveal-init delay-200">
             {t(
               'تصميمات أنيقة لكل يوم، وقطع تتفصل على مقاسك بالضبط بخامات راقية ولمسات تجمع بين الراحة والجمال.',
               'Elevated everyday essentials and custom-tailored pieces, thoughtfully crafted with premium fabrics and timeless silhouettes.'
             )}
           </p>
 
-          <div className="flex flex-wrap items-center gap-3.5 animate-fade-in-up delay-300">
+          <div className="flex flex-wrap items-center gap-3.5 reveal-init delay-300">
             <button
               type="button"
               className="px-7 py-3.5 rounded-full bg-[#142b4a] hover:bg-[#1e3a61] text-white text-sm font-bold shadow-md hover:shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] inline-flex items-center gap-2"
@@ -71,7 +75,7 @@ export default function HomeView() {
           </div>
 
           {/* Trust Badges */}
-          <div className="mt-10 sm:mt-14 flex flex-wrap items-center gap-5 sm:gap-7 animate-fade-in-up delay-400">
+          <div className="mt-10 sm:mt-14 flex flex-wrap items-center gap-5 sm:gap-7 reveal-init delay-400">
             {[
               { ar: 'تصميم أصيل', en: 'Original design' },
               { ar: 'خامات فاخرة', en: 'Premium fabrics' },
@@ -89,7 +93,7 @@ export default function HomeView() {
         </div>
 
         {/* Photo Column */}
-        <div className="relative min-h-[380px] lg:min-h-full overflow-hidden bg-[#d5b995] group animate-fade-in-right">
+        <div className="relative min-h-[380px] lg:min-h-full overflow-hidden bg-[#d5b995] group reveal-right delay-200">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={assetPath('assets/modest-abaya-editorial.jpg')}
@@ -111,7 +115,7 @@ export default function HomeView() {
 
       {/* ══════════════════════ CURATED CATEGORIES ══════════════════════ */}
       <section className="max-w-[1240px] mx-auto px-4 sm:px-6 py-16 sm:py-24">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 reveal-init">
           <div>
             <span className="text-xs text-[#b99664] font-bold tracking-[0.25em] uppercase">
               CURATED FOR YOU
@@ -134,7 +138,7 @@ export default function HomeView() {
               <button
                 key={c.id}
                 type="button"
-                className={`relative h-[260px] sm:h-[350px] rounded-2xl overflow-hidden bg-[#e0ceb6] group cursor-pointer text-start shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1.5 border border-[#e8dfd1] animate-fade-in-up delay-${(i + 1) * 100}`}
+                className={`relative h-[260px] sm:h-[350px] rounded-2xl overflow-hidden bg-[#e0ceb6] group cursor-pointer text-start shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1.5 border border-[#e8dfd1] reveal-init delay-${(i + 1) * 100}`}
                 onClick={() => handleCategoryClick(c.id)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -166,7 +170,7 @@ export default function HomeView() {
       {/* ══════════════════════ NEW COLLECTION BANNER ══════════════════════ */}
       {data.settings.collectionEnabled !== false && (
         <section className="max-w-[1240px] mx-auto px-4 sm:px-6 pb-16">
-          <div className="relative overflow-hidden rounded-3xl bg-[#142b4a] p-8 sm:p-14 shadow-xl">
+          <div className="relative overflow-hidden rounded-3xl bg-[#142b4a] p-8 sm:p-14 shadow-xl reveal-init">
             {/* Subtle background dots pattern */}
             <div
               className="absolute inset-0 opacity-10 pointer-events-none"
@@ -177,7 +181,7 @@ export default function HomeView() {
             />
 
             <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-center">
-              <div className="flex flex-col justify-center items-start text-start space-y-4">
+              <div className="flex flex-col justify-center items-start text-start space-y-4 reveal-left delay-100">
                 <span className="text-xs text-[#b99664] font-bold tracking-[0.25em] uppercase">
                   NEW ARRIVALS
                 </span>
@@ -208,10 +212,10 @@ export default function HomeView() {
               </div>
 
               <div className="grid grid-cols-3 gap-3 sm:gap-4 items-center">
-                {newArrivals.map((p) => (
+                {newArrivals.map((p, i) => (
                   <div
                     key={p.id}
-                    className="aspect-[3/4] rounded-2xl overflow-hidden bg-[#243d61] border border-white/10 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5"
+                    className={`aspect-[3/4] rounded-2xl overflow-hidden bg-[#243d61] border border-white/10 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 reveal-scale delay-${(i + 2) * 100}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -233,7 +237,7 @@ export default function HomeView() {
 
       {/* ══════════════════════ THE ZAMZAM EDIT ══════════════════════ */}
       <section className="max-w-[1240px] mx-auto px-4 sm:px-6 py-12 pb-20">
-        <div className="flex items-center justify-between gap-4 mb-10">
+        <div className="flex items-center justify-between gap-4 mb-10 reveal-init">
           <div>
             <span className="text-xs text-[#b99664] font-bold tracking-[0.25em] uppercase">
               THE EDIT
@@ -256,8 +260,11 @@ export default function HomeView() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featured.map((p) => (
-            <div key={p.id}>
+          {featured.map((p, i) => (
+            <div
+              key={p.id}
+              className={`reveal-init delay-${(i + 1) * 100}`}
+            >
               <ProductCard product={p} />
             </div>
           ))}
@@ -266,12 +273,12 @@ export default function HomeView() {
 
       {/* ══════════════════════ TAILOR STUDIO BANNER ══════════════════════ */}
       <section className="max-w-[1240px] mx-auto px-4 sm:px-6 pb-20">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#e7dac5] via-[#dfcdb1] to-[#cfb895] p-8 sm:p-14 flex flex-col md:flex-row items-center justify-between gap-8 border border-[#d6c2a7] shadow-lg">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#e7dac5] via-[#dfcdb1] to-[#cfb895] p-8 sm:p-14 flex flex-col md:flex-row items-center justify-between gap-8 border border-[#d6c2a7] shadow-lg reveal-init">
           {/* Subtle geometric circles */}
           <div className="absolute -end-10 -top-10 w-56 h-56 rounded-full bg-[#142b4a]/6 pointer-events-none" />
           <div className="absolute -start-6 -bottom-6 w-40 h-40 rounded-full bg-[#b99664]/15 pointer-events-none" />
 
-          <div className="relative z-10 text-start space-y-4 max-w-xl">
+          <div className="relative z-10 text-start space-y-4 max-w-xl reveal-left delay-100">
             <span className="text-xs text-[#7c5e30] font-bold tracking-[0.25em] uppercase">
               DESIGNED BY YOU
             </span>
@@ -296,8 +303,13 @@ export default function HomeView() {
             </div>
           </div>
 
-          <div className="relative z-10 hidden md:flex font-serif text-[10rem] font-bold text-[#142b4a]/12 select-none items-center justify-center animate-float">
-            Z<span className="text-5xl -mt-12 text-[#b99664]/50">✦</span>
+          <div className="relative z-10 hidden md:flex items-center justify-center animate-float reveal-right delay-200">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={assetPath('assets/logo-transparent.png')}
+              alt="Zamzam Fashion"
+              className="w-48 h-48 lg:w-56 lg:h-56 object-contain drop-shadow-md"
+            />
           </div>
         </div>
       </section>

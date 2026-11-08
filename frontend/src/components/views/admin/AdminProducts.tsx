@@ -69,7 +69,7 @@ export default function AdminProducts() {
             id="admin-category-filter"
             value={adminProductFilter}
             onChange={(e) => setAdminProductFilter(e.target.value)}
-            className="border border-[#dedbd5] rounded-xl p-2.5 bg-white text-[#263548] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+            className="border border-[#dedbd5] rounded-xl p-2.5 bg-white text-[#263548] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#b99664]"
           >
             <option value="all">{t('كل الأقسام', 'All categories')}</option>
             {data.categories.map((c) => (

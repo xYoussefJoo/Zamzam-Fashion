@@ -151,7 +151,7 @@ export default function AdminProductEditor() {
               value={ar}
               onChange={(e) => setAr(e.target.value)}
               required
-              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             />
           </label>
 
@@ -162,7 +162,7 @@ export default function AdminProductEditor() {
               value={en}
               onChange={(e) => setEn(e.target.value)}
               required
-              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             />
           </label>
 
@@ -173,7 +173,7 @@ export default function AdminProductEditor() {
               value={categoryId}
               onChange={(e) => setCategoryId(Number(e.target.value))}
               required
-              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+              className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             >
               <option value="" disabled>
                 {t('اختاري القسم الصحيح', 'Select a category')}
@@ -197,7 +197,7 @@ export default function AdminProductEditor() {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 required
-                className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+                className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
               />
             </label>
 
@@ -210,7 +210,7 @@ export default function AdminProductEditor() {
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
                 required
-                className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+                className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
               />
             </label>
           </div>
@@ -304,7 +304,7 @@ export default function AdminProductEditor() {
               'الخامة، القصة، تعليمات الغسيل...',
               'Fabric, fit, washing instructions...'
             )}
-            className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+            className="border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
           />
         </label>
 
@@ -344,7 +344,7 @@ export default function AdminProductEditor() {
                     setImageUrl(e.target.value);
                     setImagePreview(e.target.value);
                   }}
-                  className="border border-[#dedbd5] rounded-xl p-2.5 bg-white text-[#263548] text-xs focus:outline-none focus:ring-2 focus:ring-[#142b4a]"
+                  className="border border-[#dedbd5] rounded-xl p-2.5 bg-white text-[#263548] text-xs focus:outline-none focus:ring-2 focus:ring-[#b99664]"
                 />
               </label>
               <small className="block text-[11px] text-[#7c8086]">

@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Product } from '@/types/zamzam';
 import { useZamzamStore } from '@/store/useZamzamStore';
 import { assetPath } from '@/data/seed';
-import VariantPicker from './VariantPicker';
 
 interface ProductCardProps {
   product: Product;
@@ -15,15 +14,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   const data = useZamzamStore((state) => state.data);
   const money = useZamzamStore((state) => state.money);
   const t = useZamzamStore((state) => state.t);
-  const addToCart = useZamzamStore((state) => state.addToCart);
+  const openProduct = useZamzamStore((state) => state.openProduct);
 
-  const defaultSize = product.sizes?.[0] || 'One Size';
-  const defaultColor = product.colors?.[0] || 'حسب المتاح';
-
-  const [selectedSize, setSelectedSize] = useState<string>(defaultSize);
-  const [selectedColor, setSelectedColor] = useState<string>(defaultColor);
   const [imgError, setImgError] = useState<boolean>(false);
-  const [justAdded, setJustAdded] = useState<boolean>(false);
 
   const category = data.categories.find(
     (c) => Number(c.id) === Number(product.categoryId)
@@ -32,18 +25,19 @@ export default function ProductCard({ product }: ProductCardProps) {
   const title = product[lang] || product.ar;
   const isOutOfStock = product.stock <= 0;
 
-  const handleAdd = () => {
-    addToCart(product.id, selectedSize, selectedColor);
-    setJustAdded(true);
-    setTimeout(() => {
-      setJustAdded(false);
-    }, 1800);
+  const handleCardClick = () => {
+    openProduct(product.id);
   };
 
   return (
-    <article className="group rounded-2xl bg-white border border-[#e8e3d9] overflow-hidden flex flex-col h-full shadow-xs hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
+    <article
+      onClick={handleCardClick}
+      className="group rounded-2xl bg-white border border-[#e8e3d9] overflow-hidden flex flex-col h-full shadow-xs hover:shadow-xl transition-all duration-500 hover:-translate-y-1.5 cursor-pointer"
+    >
       {/* Product Image Area */}
-      <div className={`relative h-[280px] sm:h-[320px] bg-[#f7f3eb] overflow-hidden flex items-center justify-center ${product.tone || ''}`}>
+      <div
+        className={`relative h-[290px] sm:h-[330px] bg-[#f7f3eb] overflow-hidden flex items-center justify-center ${product.tone || ''}`}
+      >
         {product.image && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -51,7 +45,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={title}
             loading="lazy"
             onError={() => setImgError(true)}
-            className="w-full h-full object-cover object-top group-hover:scale-[1.06] transition-transform duration-700 ease-out"
+            className="w-full h-full object-cover object-top group-hover:scale-[1.07] transition-transform duration-700 ease-out"
           />
         ) : (
           <span className="text-6xl select-none group-hover:scale-110 transition-transform duration-500">
@@ -71,9 +65,17 @@ export default function ProductCard({ product }: ProductCardProps) {
           </span>
         )}
 
+        {/* Hover Action Pill */}
+        <div className="absolute inset-0 bg-[#142b4a]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+          <span className="px-5 py-2.5 rounded-full bg-white text-[#142b4a] text-xs font-bold shadow-lg transform translate-y-3 group-hover:translate-y-0 transition-transform duration-300 flex items-center gap-2">
+            <span>{t('عرض التفاصيل والطلب', 'View details & order')}</span>
+            <span className="text-sm">↗</span>
+          </span>
+        </div>
+
         {/* Out of Stock Overlay */}
         {isOutOfStock && (
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center">
+          <div className="absolute inset-0 bg-white/75 backdrop-blur-xs flex items-center justify-center pointer-events-none">
             <span className="px-4 py-1.5 rounded-full bg-[#142b4a] text-white text-xs font-bold shadow-md">
               {t('غير متوفر حالياً', 'Out of stock')}
             </span>
@@ -90,57 +92,24 @@ export default function ProductCard({ product }: ProductCardProps) {
           <p className="text-xs text-[#77808b] line-clamp-2 min-h-[2.2em] leading-relaxed mt-1">
             {product.description || '\u00A0'}
           </p>
+        </div>
 
-          <div className="flex items-center justify-between text-sm pt-3 border-t border-[#e8e3d9] mt-2">
+        {/* Price & Action Link */}
+        <div className="flex items-center justify-between pt-3 border-t border-[#e8e3d9] mt-2">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-[#77808b] uppercase tracking-wider">
+              {t('السعر', 'PRICE')}
+            </span>
             <span className="font-extrabold text-[#b99664] text-lg tracking-tight">
               {money(product.price)}
             </span>
-            <span className="text-xs text-[#77808b]">
-              {t('متاح', 'Stock')}: {product.stock}
-            </span>
           </div>
+
+          <span className="text-xs font-bold text-[#142b4a] group-hover:text-[#b99664] group-hover:translate-x-1 transition-all flex items-center gap-1">
+            <span>{t('تفاصيل القطعة', 'View details')}</span>
+            <span>↗</span>
+          </span>
         </div>
-
-        {/* Collapsible details for Size & Color */}
-        <details className="border border-[#e8e3d9] rounded-xl bg-[#faf7f2] overflow-hidden group/details transition-colors">
-          <summary className="p-2.5 text-xs font-bold text-[#142b4a] flex items-center justify-between cursor-pointer select-none hover:bg-[#f2ece0] transition-colors">
-            <span>{t('المقاس واللون', 'Select size & color')}</span>
-            <span className="text-[#b99664] group-open/details:rotate-180 transition-transform duration-200 text-sm">
-              ⌄
-            </span>
-          </summary>
-          <div className="p-3 border-t border-[#e8dfd1] bg-white">
-            <VariantPicker
-              productId={product.id}
-              sizes={product.sizes}
-              colors={product.colors}
-              selectedSize={selectedSize}
-              selectedColor={selectedColor}
-              onSelectSize={setSelectedSize}
-              onSelectColor={setSelectedColor}
-            />
-          </div>
-        </details>
-
-        {/* Add to Cart Button */}
-        <button
-          type="button"
-          disabled={isOutOfStock}
-          onClick={handleAdd}
-          className={`w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 cursor-pointer shadow-xs active:scale-[0.98] ${
-            justAdded
-              ? 'bg-[#b99664] text-white shadow-md shadow-[#b99664]/30'
-              : isOutOfStock
-              ? 'bg-[#e8e3d9] text-[#77808b] cursor-not-allowed'
-              : 'bg-[#142b4a] hover:bg-[#1e3a61] text-white hover:shadow-md'
-          }`}
-        >
-          {justAdded
-            ? `✓ ${t('تمت الإضافة للسلة', 'Added to bag!')}`
-            : isOutOfStock
-            ? t('غير متوفر حالياً', 'Out of stock')
-            : t('أضيفي للسلة', 'Add to bag')}
-        </button>
       </div>
     </article>
   );

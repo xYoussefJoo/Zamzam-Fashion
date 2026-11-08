@@ -1,6 +1,6 @@
 export type Language = 'ar' | 'en';
 
-export type PageId = 'home' | 'shop' | 'custom' | 'orders' | 'cart' | 'admin';
+export type PageId = 'home' | 'shop' | 'custom' | 'orders' | 'cart' | 'admin' | 'product';
 
 export type AdminTab = 'overview' | 'categories' | 'products' | 'editor' | 'orders' | 'settings';
 

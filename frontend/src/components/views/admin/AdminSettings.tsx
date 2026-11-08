@@ -53,9 +53,6 @@ export default function AdminSettings() {
     setTimeout(() => setSaved(false), 2200);
   };
 
-  const inputClasses =
-    'w-full border border-[#e8e3d9] rounded-xl px-4 py-3 text-sm bg-white text-[#2d3540] focus:ring-2 focus:ring-[#b99664] focus:border-[#b99664] outline-none transition-all placeholder:text-[#77808b]/60';
-
   const footerFields: [string, string, string, string, (v: string) => void][] = [
     ['phone', 'رقم الهاتف', 'Phone number', phone, setPhone],
     ['whatsapp', 'واتساب بكود الدولة', 'WhatsApp with country code', whatsapp, setWhatsapp],
@@ -89,7 +86,7 @@ export default function AdminSettings() {
               value={bannerAr}
               onChange={(e) => setBannerAr(e.target.value)}
               required
-              className={inputClasses}
+                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             />
           </div>
 
@@ -102,7 +99,7 @@ export default function AdminSettings() {
               value={bannerEn}
               onChange={(e) => setBannerEn(e.target.value)}
               required
-              className={inputClasses}
+                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             />
           </div>
 
@@ -117,7 +114,7 @@ export default function AdminSettings() {
               value={deliveryFee}
               onChange={(e) => setDeliveryFee(e.target.value)}
               required
-              className={inputClasses}
+                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             />
           </div>
         </div>
@@ -142,7 +139,7 @@ export default function AdminSettings() {
               name="collectionAr"
               value={collectionAr}
               onChange={(e) => setCollectionAr(e.target.value)}
-              className={inputClasses}
+              className={'w-full border border-[#e8e3d9] rounded-xl px-4 py-3 text-sm bg-white text-[#2d3540] focus:ring-2 focus:ring-[#b99664] focus:border-[#b99664] outline-none transition-all placeholder:text-[#77808b]/60'}
             />
           </div>
 
@@ -154,7 +151,7 @@ export default function AdminSettings() {
               name="collectionEn"
               value={collectionEn}
               onChange={(e) => setCollectionEn(e.target.value)}
-              className={inputClasses}
+                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
             />
           </div>
 
@@ -195,7 +192,7 @@ export default function AdminSettings() {
                 name={key}
                 value={val}
                 onChange={(e) => setter(e.target.value)}
-                className={inputClasses}
+                className="w-full border border-[#dedbd5] rounded-xl p-3 bg-white text-[#263548] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664]"
               />
             </div>
           ))}

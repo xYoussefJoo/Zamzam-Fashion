@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
+import { assetPath } from '@/data/seed';
 
 export default function Footer() {
   const data = useZamzamStore((state) => state.data);
@@ -31,8 +32,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-10 border-b border-white/10">
           {/* Brand Column */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="font-serif text-3xl italic text-[#b99664] leading-none">Z</span>
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={assetPath('assets/logo.png')}
+                alt="Zamzam Fashion"
+                className="w-16 h-16 object-contain"
+              />
               <div>
                 <b className="text-xl font-bold tracking-tight block">Zamzam Fashion</b>
                 <small className="text-[10px] tracking-widest text-[#b99664] font-semibold uppercase">
@@ -95,15 +101,29 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Copyright & Sub-bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/50">
-          <span>© 2026 Zamzam Fashion. All rights reserved.</span>
-          <div className="flex items-center gap-2 text-[#b99664]">
-            <span>✦</span>
-            <span className="text-[11px] font-semibold text-white/60 tracking-wider">
-              QUALITY CRAFTSMANSHIP
-            </span>
-            <span>✦</span>
+        {/* Copyright & Powered By Bar */}
+        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/60">
+          <span>{t('جميع الحقوق محفوظة © 2026 Kernel Panic', 'Copyright © 2026 Kernel Panic - All rights reserved.')}</span>
+
+          <div className="flex items-center gap-2">
+            <span className="text-white/50">{t('تصميم وتطوير بواسطة:', 'Powered by:')}</span>
+            <a href="https://itkernelpanic.com/" target="_blank">
+              <div className={`flex  ${lang === 'ar' ? 'flex-row-reverse' : 'flex-row'} items-center gap-1.5 font-bold bg-white px-4 py-1 rounded-full`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={assetPath('assets/kp-logo.png')}
+                alt="Kernel Panic"
+                className="w-12 h-12 object-contain rounded-xs"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+              <span className='flex flex-col'>
+              <span className='text-black font-bold text-lg'>KERNEL <span className='text-[#0062FF]'>PANIC</span></span>
+              <span className='text-gray-400 text-xs tracking-widest text-left w-full'>IT TEAM</span>
+              </span>
+            </div>
+            </a>
           </div>
         </div>
       </div>

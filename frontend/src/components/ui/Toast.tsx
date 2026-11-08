@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
 
 export default function Toast() {
@@ -9,13 +9,52 @@ export default function Toast() {
   const go = useZamzamStore((state) => state.go);
   const t = useZamzamStore((state) => state.t);
 
+  const [isExiting, setIsExiting] = useState(false);
+  const exitTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+
+    // Auto-dismiss: after 3.8s, trigger exit animation (.animate-toast-out), then hide toast
+    const autoDismissTimer = setTimeout(() => {
+      setIsExiting(true);
+      exitTimerRef.current = setTimeout(() => {
+        hideToast();
+        setIsExiting(false);
+      }, 350);
+    }, 3800);
+
+    return () => {
+      clearTimeout(autoDismissTimer);
+      if (exitTimerRef.current) {
+        clearTimeout(exitTimerRef.current);
+      }
+    };
+  }, [toast, hideToast]);
+
+  const handleDismiss = () => {
+    setIsExiting(true);
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    exitTimerRef.current = setTimeout(() => {
+      hideToast();
+      setIsExiting(false);
+    }, 350);
+  };
+
+  const handleViewCart = () => {
+    handleDismiss();
+    go('cart');
+  };
+
   if (!toast) return null;
 
   const isError = toast.type === 'error';
 
   return (
     <div
-      className="fixed top-24 end-4 sm:end-6 z-50 max-w-sm w-full pointer-events-none animate-toast-enter"
+      className={`fixed top-24 end-4 sm:end-6 z-50 max-w-sm w-full pointer-events-none ${
+        isExiting ? 'animate-toast-out' : 'animate-toast-enter'
+      }`}
       aria-live="polite"
       aria-atomic="true"
     >
@@ -48,10 +87,7 @@ export default function Toast() {
             <button
               type="button"
               className="bg-[#142b4a] hover:bg-[#1f3d65] text-white text-[11px] font-bold px-2.5 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap"
-              onClick={() => {
-                hideToast();
-                go('cart');
-              }}
+              onClick={handleViewCart}
             >
               {t('عرض السلة', 'View cart')}
             </button>
@@ -61,7 +97,7 @@ export default function Toast() {
             type="button"
             className="text-[#142b4a] hover:opacity-75 p-1 text-xl leading-none cursor-pointer"
             aria-label={t('إغلاق الإشعار', 'Dismiss notification')}
-            onClick={hideToast}
+            onClick={handleDismiss}
           >
             ×
           </button>

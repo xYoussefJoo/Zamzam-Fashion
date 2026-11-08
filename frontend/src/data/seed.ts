@@ -404,6 +404,7 @@ export const navigationLabels: Record<string, [string, string]> = {
   orders: ['طلباتي', 'My orders'],
   cart: ['السلة', 'Cart'],
   admin: ['الإدارة', 'Admin'],
+  product: ['تفاصيل المنتج', 'Product details'],
 };
 
 export const adminTabsLabels: Record<string, [string, string]> = {

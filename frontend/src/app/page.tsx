@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 import TopBanner from '@/components/layout/TopBanner';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -12,6 +13,7 @@ import CustomTailoringView from '@/components/views/CustomTailoringView';
 import CartView from '@/components/views/CartView';
 import OrdersView from '@/components/views/OrdersView';
 import AdminView from '@/components/views/admin/AdminView';
+import ProductDetailsView from '@/components/views/ProductDetailsView';
 
 export default function Home() {
   const page = useZamzamStore((state) => state.page);
@@ -25,6 +27,9 @@ export default function Home() {
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // Scroll reveal observer on route/page change
+  useScrollReveal([page]);
 
   // Escape key handler for admin navigation (matches vanilla behavior)
   useEffect(() => {
@@ -56,6 +61,7 @@ export default function Home() {
         {page === 'cart' && <CartView />}
         {page === 'orders' && <OrdersView />}
         {page === 'admin' && <AdminView />}
+        {page === 'product' && <ProductDetailsView />}
       </main>
 
       {page !== 'admin' && <Footer />}

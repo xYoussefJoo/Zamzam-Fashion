@@ -33,6 +33,7 @@ export interface ZamzamState {
   adminProductFilter: string;
   editingProductId: number | null;
   editorCategoryId: number | null;
+  selectedProductId: number | null;
   data: StoreData;
   toast: ToastMessage | null;
   isHydrated: boolean;
@@ -57,7 +58,10 @@ export interface ZamzamState {
   showToast: (message: string, type?: 'success' | 'error', options?: { showCartLink?: boolean }) => void;
   hideToast: () => void;
 
-  addToCart: (productId: number, size: string, color: string) => boolean;
+  setSelectedProductId: (id: number | null) => void;
+  openProduct: (id: number) => void;
+
+  addToCart: (productId: number, size: string, color: string, qty?: number) => boolean;
   removeFromCart: (productId: number, size: string, color: string) => void;
   checkout: (details: {
     customer: string;
@@ -110,6 +114,7 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
   adminProductFilter: 'all',
   editingProductId: null,
   editorCategoryId: null,
+  selectedProductId: null,
   data: initialStoreData,
   toast: null,
   isHydrated: false,
@@ -157,11 +162,18 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
       }
 
       let initialPage: PageId = 'home';
+      let initialProductId: number | null = null;
       if (window.location.hash === '#admin') {
         initialPage = 'admin';
+      } else if (window.location.hash.startsWith('#product-')) {
+        const parsedId = Number(window.location.hash.replace('#product-', ''));
+        if (!isNaN(parsedId) && parsedId > 0) {
+          initialPage = 'product';
+          initialProductId = parsedId;
+        }
       } else if (window.location.hash.startsWith('#')) {
         const hash = window.location.hash.slice(1) as PageId;
-        if (['home', 'shop', 'custom', 'orders', 'cart', 'admin'].includes(hash)) {
+        if (['home', 'shop', 'custom', 'orders', 'cart', 'admin', 'product'].includes(hash)) {
           initialPage = hash;
         }
       }
@@ -170,6 +182,7 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
         lang: initialLang,
         data: resolvedData,
         page: initialPage,
+        selectedProductId: initialProductId,
         isHydrated: true,
       });
     } catch (err) {
@@ -231,9 +244,26 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
       page: p,
     });
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', p === 'admin' ? '#admin' : '#' + p);
-      window.scrollTo(0, 0);
+      const hash =
+        p === 'admin'
+          ? '#admin'
+          : p === 'product' && get().selectedProductId
+          ? `#product-${get().selectedProductId}`
+          : '#' + p;
+      window.history.replaceState(null, '', hash);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  },
+
+  setSelectedProductId: (id: number | null) => {
+    set({ selectedProductId: id });
+  },
+
+  openProduct: (id: number) => {
+    const p = get().data.products.find((x) => x.id === id);
+    if (!p) return;
+    set({ selectedProductId: id });
+    get().go('product');
   },
 
   setFilter: (categoryId: string) => {
@@ -313,20 +343,21 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
     return false;
   },
 
-  addToCart: (productId: number, size: string, color: string): boolean => {
+  addToCart: (productId: number, size: string, color: string, qty: number = 1): boolean => {
     const { data, lang, localizedColor, t, showToast } = get();
     const p = data.products.find((x) => x.id === productId);
     if (!p || p.stock <= 0) return false;
 
     const effectiveSize = size || (p.sizes[0] ?? 'One Size');
     const effectiveColor = color || (p.colors[0] ?? 'حسب المتاح');
+    const quantityToAdd = Math.max(1, qty || 1);
 
     const totalQtyInCart = data.cart
       .filter((x) => x.id === productId)
       .reduce((sum, item) => sum + item.qty, 0);
 
-    if (totalQtyInCart >= p.stock) {
-      showToast(t('الكمية غير متاحة', 'Quantity unavailable'), 'error');
+    if (totalQtyInCart + quantityToAdd > p.stock) {
+      showToast(t('الكمية المطلوبة غير متوفرة في المخزون', 'Quantity unavailable in stock'), 'error');
       return false;
     }
 
@@ -337,10 +368,10 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
     let newCart: CartItem[];
     if (existing) {
       newCart = data.cart.map((item) =>
-        item === existing ? { ...item, qty: item.qty + 1 } : item
+        item === existing ? { ...item, qty: item.qty + quantityToAdd } : item
       );
     } else {
-      newCart = [...data.cart, { id: productId, qty: 1, size: effectiveSize, color: effectiveColor }];
+      newCart = [...data.cart, { id: productId, qty: quantityToAdd, size: effectiveSize, color: effectiveColor }];
     }
 
     const updatedData = { ...data, cart: newCart };
@@ -349,10 +380,11 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
 
     const productName = lang === 'ar' ? p.ar : p.en;
     const colorLabel = localizedColor(effectiveColor);
+    const qtyText = quantityToAdd > 1 ? ` (${quantityToAdd})` : '';
     showToast(
       t(
-        `تمت إضافة ${productName} للسلة — ${effectiveSize} / ${colorLabel}`,
-        `${productName} added to your bag — ${effectiveSize} / ${colorLabel}`
+        `تمت إضافة ${productName}${qtyText} للسلة — ${effectiveSize} / ${colorLabel}`,
+        `${productName}${qtyText} added to your bag — ${effectiveSize} / ${colorLabel}`
       ),
       'success',
       { showCartLink: true }

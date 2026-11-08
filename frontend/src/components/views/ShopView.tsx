@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 import ProductCard from '@/components/shop/ProductCard';
 
 export default function ShopView() {
@@ -16,10 +17,13 @@ export default function ShopView() {
     (p) => p.visible && p.stock > 0 && isInCategory(p, filter)
   );
 
+  // Trigger scroll-reveal whenever category filter changes
+  useScrollReveal([filter, filteredProducts.length]);
+
   return (
     <section className="max-w-[1240px] mx-auto px-4 sm:px-6 py-12 space-y-8 animate-scale-in">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#e8dfd1]">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#e8dfd1] reveal-init">
         <div>
           <span className="text-xs text-[#b99664] font-bold tracking-[0.2em] uppercase">
             COLLECTION
@@ -37,7 +41,7 @@ export default function ShopView() {
       </div>
 
       {/* Modern Category Filter Pills */}
-      <div className="flex flex-wrap items-center gap-2.5">
+      <div className="flex flex-wrap items-center gap-2.5 reveal-init delay-100">
         <button
           type="button"
           className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 cursor-pointer ${
@@ -73,12 +77,17 @@ export default function ShopView() {
       {/* Product Grid */}
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
-          {filteredProducts.map((p) => (
-            <ProductCard key={p.id} product={p} />
+          {filteredProducts.map((p, i) => (
+            <div
+              key={p.id}
+              className={`reveal-init delay-${((i % 4) + 1) * 100}`}
+            >
+              <ProductCard product={p} />
+            </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 bg-white rounded-3xl border border-[#e8dfd1] p-10 space-y-4">
+        <div className="text-center py-20 bg-white rounded-3xl border border-[#e8dfd1] p-10 space-y-4 reveal-init">
           <span className="text-5xl block animate-float select-none">👗</span>
           <h3 className="text-lg font-bold text-[#142b4a]">
             {t('لا توجد قطع متاحة حالياً في هذا القسم', 'No pieces currently available in this category')}
