@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Npgsql;
 using Zamzam.Infrastructure.Health;
 using Zamzam.Application.Common;
 using Zamzam.Application.Orders;
@@ -27,6 +28,13 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Zamzam")
             ?? throw new InvalidOperationException(
                 "Connection string 'Zamzam' is missing. Set it with: dotnet user-secrets set \"ConnectionStrings:Zamzam\" \"Host=localhost;Port=5432;Database=zamzam;Username=zamzam;Password=...\"");
+
+        // Supabase's pooler allows only a few connections per project. Npgsql would open up to 100, so cap it
+        // (Database:MaxPoolSize, default 10) unless the connection string already sets its own limit.
+        var connection = new NpgsqlConnectionStringBuilder(connectionString);
+        if (connection.MaxPoolSize == new NpgsqlConnectionStringBuilder().MaxPoolSize)
+            connection.MaxPoolSize = configuration.GetValue("Database:MaxPoolSize", 10);
+        connectionString = connection.ConnectionString;
 
         services.AddSingleton(TimeProvider.System);
         services.AddDbContext<ZamzamDbContext>(options => options.UseNpgsql(connectionString, npgsql => npgsql

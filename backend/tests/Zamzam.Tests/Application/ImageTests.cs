@@ -140,6 +140,37 @@ public class SkiaImageProcessorTests
     }
 
     [Fact]
+    public async Task A_huge_jpeg_is_decoded_scaled_down_and_still_gives_a_full_1600_px_file()
+    {
+        // 6400 x 4800 = 30.7 MP: at full size that's ~123 MB of pixels, over the 16 MP in-memory limit.
+        var results = await new SkiaImageProcessor().ToWebpSizesAsync(new MemoryStream(Photo(6400, 4800)), CancellationToken.None);
+
+        using var largest = SKBitmap.Decode(results.Single(r => r.Width == 1600).Content);
+        Assert.Equal(1600, largest.Width);
+        Assert.Equal(1200, largest.Height);
+    }
+
+    [Fact]
+    public async Task A_huge_png_that_cant_be_decoded_smaller_is_refused_with_413()
+    {
+        // PNG has no scaled decoding, so 4500 x 4000 = 18 MP would all sit in memory.
+        var error = await Assert.ThrowsAsync<FileRejectedException>(() =>
+            new SkiaImageProcessor().ToWebpSizesAsync(new MemoryStream(Photo(4500, 4000, SKEncodedImageFormat.Png)), CancellationToken.None));
+
+        Assert.Equal(413, error.StatusCode);
+    }
+
+    [Fact]
+    public async Task The_callers_buffer_is_read_in_place_and_left_open()
+    {
+        var buffer = new MemoryStream(Photo(1000, 800));
+
+        await new SkiaImageProcessor().ToWebpSizesAsync(buffer, CancellationToken.None);
+
+        Assert.True(buffer.CanRead); // not copied and not disposed: PhotoUpload still owns it
+    }
+
+    [Fact]
     public async Task Garbage_bytes_are_refused_with_415()
     {
         var bytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 1, 2, 3, 4, 5 }; // JPEG header, broken body

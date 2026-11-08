@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using Zamzam.Api.Errors;
@@ -16,6 +17,14 @@ var builder = WebApplication.CreateBuilder(args);
 StartupChecks.EnsureServerSettings(builder.Configuration, builder.Environment);
 // Don't tell attackers which server we run (the header is added after the middleware, so turn it off here).
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+// Brotli, then gzip, for JSON only. Which paths use it is decided below (PublicCatalog).
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ["application/json"];
+});
 // IIS can't always tell the app its https port, so name it (only used outside Development).
 builder.Services.AddHttpsRedirection(options => options.HttpsPort = 443);
 
@@ -88,6 +97,11 @@ if (app.Configuration.GetValue("Database:MigrateOnStartup", app.Environment.IsDe
 app.UseMiddleware<ClientIpMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
+// Compress only public catalog reads: they're the biggest JSON and hold no secrets. Responses with a tracking
+// token or the owner's data stay uncompressed, which rules out BREACH-style guessing through response sizes.
+app.UseWhen(context => HttpMethods.IsGet(context.Request.Method) && PublicCatalog.IsMatch(context.Request.Path),
+    branch => branch.UseResponseCompression());
+
 // Request logging wraps the exception handler, so it logs the final status (409, 404…), not a 500.
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
@@ -132,3 +146,12 @@ app.Run();
 
 // Lets integration tests start the API with WebApplicationFactory<Program>.
 public partial class Program;
+
+// The public storefront reads that are worth compressing (no tokens, no personal data in them).
+internal static class PublicCatalog
+{
+    private static readonly PathString[] Paths =
+        ["/api/categories", "/api/products", "/api/site-settings", "/api/delivery-zones", "/api/tailoring/catalog"];
+
+    public static bool IsMatch(PathString path) => Paths.Any(p => path.StartsWithSegments(p));
+}

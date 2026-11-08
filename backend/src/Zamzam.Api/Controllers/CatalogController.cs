@@ -20,13 +20,17 @@ public sealed class CatalogController : ApiControllerBase
         handler.HandleAsync(ct);
 
     // #6 ?category=dresses&q=abaya&size=M&size=L&color=3&minPrice=&maxPrice=&inStock=true&sort=newest&page=1&pageSize=20
+    // Products are cached 60 s (#6, #7): the shop stays fast and an owner's edit shows within a minute.
+    // Checkout re-checks stock and price, so a minute-old card can't sell what isn't there.
     [HttpGet("products")]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
     public Task<Paged<ProductCard>> Products([FromQuery] SearchProductsQuery query,
         [FromServices] SearchProductsHandler handler, CancellationToken ct) =>
         handler.HandleAsync(query, ct);
 
     // #7
     [HttpGet("products/{slug}")]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
     public Task<ProductDetail> Product(string slug, [FromServices] GetProductBySlugHandler handler, CancellationToken ct) =>
         handler.HandleAsync(slug, ct);
 
