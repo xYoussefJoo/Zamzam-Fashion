@@ -13,8 +13,8 @@ export interface ZamzamState {
   filter: string; // category slug, or 'all'
   adminTab: AdminTab;
   adminProductFilter: string; // category id, or 'all'
-  editingProductId: number | null;
-  editorCategoryId: number | null;
+  productModal: { id: number | null; categoryId: number | null } | null; // the product pop-up
+  catalogVersion: number; // goes up when the product pop-up closes, so lists reload
   selectedSlug: string | null;
   tracking: { number: string; token: string } | null;
   adminOrderId: number | null;
@@ -37,9 +37,10 @@ export interface ZamzamState {
   setFilter: (categorySlug: string) => void;
   setAdminTab: (tab: AdminTab) => void;
   setAdminProductFilter: (filter: string) => void;
-  setEditingProductId: (id: number | null) => void;
-  setEditorCategoryId: (id: number | null) => void;
   openProductEditor: (categoryId?: number | null) => void;
+  editProduct: (id: number) => void;
+  setProductModalId: (id: number) => void;
+  closeProductModal: () => void;
   setAdminOrderId: (id: number | null) => void;
 
   checkSession: () => Promise<void>;
@@ -104,8 +105,8 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
   filter: 'all',
   adminTab: 'overview',
   adminProductFilter: 'all',
-  editingProductId: null,
-  editorCategoryId: null,
+  productModal: null,
+  catalogVersion: 0,
   selectedSlug: null,
   tracking: null,
   adminOrderId: null,
@@ -196,16 +197,13 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
     if (typeof window !== 'undefined' && get().page === 'admin') window.history.replaceState(null, '', urlFor(get()));
   },
   setAdminProductFilter: (filter) => set({ adminProductFilter: filter }),
-  setEditingProductId: (id) => set({ editingProductId: id }),
-  setEditorCategoryId: (id) => set({ editorCategoryId: id }),
   openProductEditor: (categoryId = null) => {
     const { adminProductFilter } = get();
-    set({
-      editingProductId: null,
-      editorCategoryId: categoryId ?? (adminProductFilter !== 'all' ? Number(adminProductFilter) : null),
-      adminTab: 'editor',
-    });
+    set({ productModal: { id: null, categoryId: categoryId ?? (adminProductFilter !== 'all' ? Number(adminProductFilter) : null) } });
   },
+  editProduct: (id) => set({ productModal: { id, categoryId: null } }),
+  setProductModalId: (id) => set((s) => ({ productModal: { id, categoryId: s.productModal?.categoryId ?? null } })),
+  closeProductModal: () => set((s) => ({ productModal: null, catalogVersion: s.catalogVersion + 1 })),
   setAdminOrderId: (id) => {
     set({ adminOrderId: id });
     if (typeof window !== 'undefined' && get().page === 'admin') window.history.replaceState(null, '', urlFor(get()));

@@ -6,8 +6,11 @@ import { useApi } from '@/lib/useApi';
 import { ApiError, errorText } from '@/lib/api';
 import { getAdminTailoringCatalog, saveTailoringCatalog, type TailoringCatalogContent } from '@/lib/admin';
 
+import { Button, Field as FormField, Modal, ui, useModalDirty } from '@/components/admin/ui';
+
 type Field = { key: string; nameAr: string; nameEn: string; required?: boolean };
 type Groups = Record<string, Field[]>;
+type AddKind = 'garments' | 'styles' | 'fabrics' | 'fits' | 'group' | { field: string };
 
 // #39–#40 — what the tailoring form offers: garments, styles, fabrics, fits and the measurement fields.
 // Saved as one document; orders already placed keep their own copy of the fields.
@@ -16,6 +19,7 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
   const showToast = useZamzamStore((state) => state.showToast);
   const [c, setC] = useState<TailoringCatalogContent | null>(() => structuredClone(data));
   const [busy, setBusy] = useState(false);
+  const [adding, setAdding] = useState<AddKind | null>(null);
 
   if (!c) return <div className="h-96 rounded-2xl bg-[#f7f3eb] animate-pulse" />;
 
@@ -61,7 +65,7 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
       </div>
 
       <section className={box}>
-        {head('القطع', 'Garments', () => update({ garments: [...c.garments, { key: '', nameAr: '', nameEn: '', measurementGroups: ['common'], isActive: true }] }))}
+        {head('القطع', 'Garments', () => setAdding('garments'))}
         {c.garments.map((g, i) => (
           <div key={i} className="grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_1.5fr_auto_auto] gap-2 items-center">
             <input value={g.key} dir="ltr" placeholder="key" onChange={(e) => update({ garments: replace(c.garments, i, { ...g, key: e.target.value.trim() }) })} className={input} aria-label="key" />
@@ -76,7 +80,7 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
       </section>
 
       <section className={box}>
-        {head('الموديلات المقترحة', 'Suggested styles', () => update({ styles: [...c.styles, { id: '', garment: c.garments[0]?.key ?? '', nameAr: '', nameEn: '', defaultFabric: c.fabrics[0]?.key ?? '', defaultFit: c.fits[0]?.key ?? '', imageUrl: null, isActive: true }] }))}
+        {head('الموديلات المقترحة', 'Suggested styles', () => setAdding('styles'))}
         {c.styles.map((s, i) => (
           <div key={i} className="grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1.3fr_auto_auto] gap-2 items-center">
             <input value={s.id} dir="ltr" placeholder="id" onChange={(e) => update({ styles: replace(c.styles, i, { ...s, id: e.target.value.trim() }) })} className={input} aria-label="id" />
@@ -101,7 +105,7 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {(['fabrics', 'fits'] as const).map((kind) => (
           <section key={kind} className={box}>
-            {head(kind === 'fabrics' ? 'الأقمشة' : 'القصّات', kind === 'fabrics' ? 'Fabrics' : 'Fits', () => update({ [kind]: [...c[kind], { key: '', nameAr: '', nameEn: '', isActive: true }] }))}
+            {head(kind === 'fabrics' ? 'الأقمشة' : 'القصّات', kind === 'fabrics' ? 'Fabrics' : 'Fits', () => setAdding(kind))}
             {c[kind].map((f, i) => (
               <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto_auto] gap-2 items-center">
                 <input value={f.key} dir="ltr" placeholder="key" onChange={(e) => update({ [kind]: replace(c[kind], i, { ...f, key: e.target.value.trim() }) })} className={input} aria-label="key" />
@@ -119,10 +123,7 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
         <div className="flex items-center justify-between">
           <h3 className="text-base font-serif font-bold text-[#142b4a]">{t('مجموعات المقاسات', 'Measurement groups')}</h3>
           <button type="button" className="px-3 py-1.5 rounded-lg border border-[#cdbb9e] text-xs font-bold cursor-pointer"
-            onClick={() => {
-              const name = window.prompt(t('اسم المجموعة (بالإنجليزية، مثل skirt)', 'Group key (English, e.g. skirt)'))?.trim();
-              if (name && !groups[name]) update({ measurementGroups: { ...groups, [name]: [] } as unknown as TailoringCatalogContent['measurementGroups'] });
-            }}>
+            onClick={() => setAdding('group')}>
             ＋ {t('مجموعة', 'Group')}
           </button>
         </div>
@@ -144,13 +145,126 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
                     {remove(() => setFields(fields.filter((_, j) => j !== i)))}
                   </div>
                 ))}
-                <button type="button" onClick={() => setFields([...fields, { key: '', nameAr: '', nameEn: '', required: false }])} className="px-3 py-1.5 rounded-lg border border-[#cdbb9e] text-xs font-bold cursor-pointer">＋ {t('حقل', 'Field')}</button>
+                <button type="button" onClick={() => setAdding({ field: group })} className="px-3 py-1.5 rounded-lg border border-[#cdbb9e] text-xs font-bold cursor-pointer">＋ {t('حقل', 'Field')}</button>
               </div>
             </details>
           );
         })}
       </section>
+
+      <Modal open={adding !== null} title={t('إضافة للكتالوج', 'Add to the catalog')} subtitle={t('تُحفظ مع الكتالوج عند الضغط على "حفظ الكتالوج"', 'Saved with the catalog when you press "Save catalog"')} onClose={() => setAdding(null)}>
+        {adding !== null && <AddItemForm kind={adding} catalog={c} onAdd={(patch) => { update(patch); setAdding(null); }} />}
+      </Modal>
     </div>
+  );
+}
+
+const KEY = /^[A-Za-z0-9_-]+$/;
+
+// The pop-up form for one new catalog item; hands back the catalog change to apply.
+function AddItemForm({ kind, catalog, onAdd }: { kind: AddKind; catalog: TailoringCatalogContent; onAdd: (patch: Partial<TailoringCatalogContent>) => void }) {
+  const t = useZamzamStore((state) => state.t);
+  const groups = catalog.measurementGroups as unknown as Groups;
+  const [key, setKey] = useState('');
+  const [nameAr, setNameAr] = useState('');
+  const [nameEn, setNameEn] = useState('');
+  const [garment, setGarment] = useState(catalog.garments[0]?.key ?? '');
+  const [fabric, setFabric] = useState(catalog.fabrics[0]?.key ?? '');
+  const [fit, setFit] = useState(catalog.fits[0]?.key ?? '');
+  const [imageUrl, setImageUrl] = useState('');
+  const [itemGroups, setItemGroups] = useState<string[]>(['common']);
+  const [required, setRequired] = useState(false);
+  const modal = useModalDirty(!!(key || nameAr || nameEn));
+
+  const isGroup = kind === 'group';
+  const fieldGroup = typeof kind === 'object' ? kind.field : null;
+  const taken = isGroup ? Object.keys(groups)
+    : fieldGroup ? (groups[fieldGroup] ?? []).map((f) => f.key)
+    : kind === 'styles' ? catalog.styles.map((s) => s.id)
+    : catalog[kind as 'garments' | 'fabrics' | 'fits'].map((x) => x.key);
+  const keyError = key && !KEY.test(key) ? t('حروف إنجليزية وأرقام و _ - فقط', 'English letters, digits, _ and - only')
+    : taken.includes(key) ? t('هذا المفتاح مستخدم بالفعل', 'That key is already used') : undefined;
+  const asGroups = (g: Groups) => g as unknown as TailoringCatalogContent['measurementGroups'];
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (keyError || !key) return;
+    if (isGroup) onAdd({ measurementGroups: asGroups({ ...groups, [key]: [] }) });
+    else if (fieldGroup) onAdd({ measurementGroups: asGroups({ ...groups, [fieldGroup]: [...(groups[fieldGroup] ?? []), { key, nameAr, nameEn, required }] }) });
+    else if (kind === 'garments') onAdd({ garments: [...catalog.garments, { key, nameAr, nameEn, measurementGroups: itemGroups, isActive: true }] });
+    else if (kind === 'styles') onAdd({ styles: [...catalog.styles, { id: key, garment, nameAr, nameEn, defaultFabric: fabric, defaultFit: fit, imageUrl: imageUrl.trim() || null, isActive: true }] });
+    else if (kind === 'fabrics' || kind === 'fits') onAdd({ [kind]: [...catalog[kind], { key, nameAr, nameEn, isActive: true }] });
+  };
+
+  const what = isGroup ? t('مجموعة مقاسات جديدة', 'New measurement group')
+    : fieldGroup ? t(`حقل جديد في ${fieldGroup}`, `New field in ${fieldGroup}`)
+    : kind === 'garments' ? t('قطعة جديدة', 'New garment')
+    : kind === 'styles' ? t('موديل جديد', 'New style')
+    : kind === 'fabrics' ? t('قماش جديد', 'New fabric') : t('قصّة جديدة', 'New fit');
+
+  return (
+    <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <p className="sm:col-span-2 text-sm font-bold text-[#142b4a]">{what}</p>
+      <FormField label={`${kind === 'styles' ? 'ID' : t('المفتاح (key)', 'Key')} *`} hint={t('بالإنجليزية وبدون مسافات، مثل wide_pants', 'English, no spaces, e.g. wide_pants')} error={keyError}>
+        <input required autoFocus dir="ltr" maxLength={50} value={key} onChange={(e) => setKey(e.target.value.trim())} className={ui.input} />
+      </FormField>
+      {!isGroup && (
+        <>
+          <FormField label={`${t('الاسم بالعربي', 'Arabic name')} *`}>
+            <input required maxLength={100} value={nameAr} onChange={(e) => setNameAr(e.target.value)} className={ui.input} />
+          </FormField>
+          <FormField label={`${t('الاسم بالإنجليزي', 'English name')} *`}>
+            <input required maxLength={100} dir="ltr" value={nameEn} onChange={(e) => setNameEn(e.target.value)} className={ui.input} />
+          </FormField>
+        </>
+      )}
+      {kind === 'garments' && (
+        <div className="sm:col-span-2 space-y-2">
+          <span className={ui.label}>{t('مجموعات المقاسات لهذه القطعة', 'Measurement groups for this garment')}</span>
+          <div className="flex flex-wrap gap-2">
+            {Object.keys(groups).map((g) => (
+              <label key={g} dir="ltr" className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-[#f7f3eb] cursor-pointer">
+                <input type="checkbox" className="accent-[#142b4a]" checked={itemGroups.includes(g)} onChange={() => setItemGroups((l) => (l.includes(g) ? l.filter((x) => x !== g) : [...l, g]))} />
+                {g}
+              </label>
+            ))}
+          </div>
+          <p className={ui.hint}>{t('تذكري: أضيفي سعرًا أساسيًا لهذه القطعة في "أسعار التفصيل".', 'Remember: give this garment a base price in "Tailoring prices".')}</p>
+        </div>
+      )}
+      {kind === 'styles' && (
+        <>
+          <FormField label={t('القطعة', 'Garment')}>
+            <select value={garment} onChange={(e) => setGarment(e.target.value)} className={ui.input}>
+              {catalog.garments.map((g) => <option key={g.key} value={g.key}>{g.nameEn || g.key}</option>)}
+            </select>
+          </FormField>
+          <FormField label={t('القماش الافتراضي', 'Default fabric')}>
+            <select value={fabric} onChange={(e) => setFabric(e.target.value)} className={ui.input}>
+              {catalog.fabrics.map((f) => <option key={f.key} value={f.key}>{f.nameEn || f.key}</option>)}
+            </select>
+          </FormField>
+          <FormField label={t('القصّة الافتراضية', 'Default fit')}>
+            <select value={fit} onChange={(e) => setFit(e.target.value)} className={ui.input}>
+              {catalog.fits.map((f) => <option key={f.key} value={f.key}>{f.nameEn || f.key}</option>)}
+            </select>
+          </FormField>
+          <FormField label={t('رابط صورة (اختياري)', 'Image link (optional)')} className="sm:col-span-2">
+            <input type="url" dir="ltr" placeholder="https://…" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className={ui.input} />
+          </FormField>
+        </>
+      )}
+      {fieldGroup && (
+        <label className="flex items-center gap-2 text-sm font-bold text-[#2d3540] cursor-pointer">
+          <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} className="accent-[#142b4a] w-4 h-4" />
+          {t('حقل إلزامي', 'Required field')}
+        </label>
+      )}
+      <div className="sm:col-span-2 flex justify-end gap-2 pt-2 border-t border-[#efe9df]">
+        <Button variant="secondary" onClick={() => modal?.requestClose()}>{t('إلغاء', 'Cancel')}</Button>
+        <Button type="submit" disabled={!!keyError || !key}>{t('إضافة', 'Add')}</Button>
+      </div>
+    </form>
   );
 }
 

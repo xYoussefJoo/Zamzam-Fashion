@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Zamzam.Domain.Common;
 using Zamzam.Domain.Constants;
@@ -19,11 +20,13 @@ public class DatabaseSeeder(
     RoleManager<IdentityRole> roles,
     SupabaseImageStorage storage,
     IConfiguration configuration,
+    IHostEnvironment environment,
     ILogger<DatabaseSeeder> logger)
 {
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         await SeedOwnerAsync();
+        await SeedDemoOwnerAsync();
 
         if (!await db.DeliveryZones.AnyAsync(cancellationToken)) db.DeliveryZones.AddRange(Seed.SeedData.DeliveryZones());
         if (!await db.Colors.AnyAsync(cancellationToken)) db.Colors.AddRange(Seed.SeedData.Colors());
@@ -104,6 +107,39 @@ public class DatabaseSeeder(
         EnsureSucceeded(await users.CreateAsync(owner, password), "create the Owner account");
         EnsureSucceeded(await users.AddToRoleAsync(owner, Roles.Owner), "give the Owner role");
         logger.LogInformation("Owner account {Email} created.", owner.Email);
+    }
+
+    // A second Owner login for testing the dashboard (Seed:DemoOwnerEmail / Seed:DemoOwnerPassword in user-secrets).
+    // Development only: in Production it is never created, and an existing one is removed so a known password can't go live.
+    private const string DemoName = "Demo (test account)";
+
+    private async Task SeedDemoOwnerAsync()
+    {
+        if (!environment.IsDevelopment())
+        {
+            // Found by its marker name, so this works even when Production has no Seed:DemoOwner* settings.
+            foreach (var old in (await users.GetUsersInRoleAsync(Roles.Owner)).Where(u => u.FullName == DemoName))
+            {
+                EnsureSucceeded(await users.DeleteAsync(old), "remove the demo account");
+                logger.LogWarning("Demo account {Email} removed: it is for Development only.", old.Email);
+            }
+            return;
+        }
+
+        var email = configuration["Seed:DemoOwnerEmail"]?.Trim().ToLowerInvariant();
+        var password = configuration["Seed:DemoOwnerPassword"];
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || await users.FindByEmailAsync(email) is not null) return;
+
+        var demo = new AppUser { UserName = email, Email = email, EmailConfirmed = true, FullName = DemoName, MustChangePassword = false };
+        // A test login must never stop the API from starting: report the reason and carry on.
+        var created = await users.CreateAsync(demo, password);
+        if (!created.Succeeded)
+        {
+            logger.LogWarning("Demo account not created: {Errors}", string.Join(" ", created.Errors.Select(e => e.Description)));
+            return;
+        }
+        EnsureSucceeded(await users.AddToRoleAsync(demo, Roles.Owner), "give the demo account the Owner role");
+        logger.LogInformation("Demo account {Email} created (Development only).", email);
     }
 
     private static void EnsureSucceeded(IdentityResult result, string action)

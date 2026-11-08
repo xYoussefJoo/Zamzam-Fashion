@@ -14,7 +14,6 @@ export default function AdminOverview() {
   const setAdminTab = useZamzamStore((state) => state.setAdminTab);
   const setAdminOrderId = useZamzamStore((state) => state.setAdminOrderId);
   const openProductEditor = useZamzamStore((state) => state.openProductEditor);
-  const setEditingProductId = useZamzamStore((state) => state.setEditingProductId);
   const go = useZamzamStore((state) => state.go);
   const t = useZamzamStore((state) => state.t);
   const { data, error, loading, reload } = useApi(getDashboard, []);
@@ -100,10 +99,7 @@ export default function AdminOverview() {
               <button
                 key={s.variantId}
                 type="button"
-                onClick={() => {
-                  setAdminTab('products');
-                  setEditingProductId(null);
-                }}
+                onClick={() => setAdminTab('products')}
                 className="w-full py-2.5 flex items-center justify-between gap-3 text-start px-2 hover:bg-[#fbf8f3] rounded-lg cursor-pointer"
               >
                 <span className="min-w-0">

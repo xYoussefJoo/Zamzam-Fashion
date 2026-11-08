@@ -6,6 +6,7 @@ import { useApi, usePage } from '@/lib/useApi';
 import { errorText } from '@/lib/api';
 import { deleteProduct, getAdminCategories, getAdminProduct, getAdminProducts, updateProduct, type AdminProductRow } from '@/lib/admin';
 import { pick } from '@/lib/shop';
+import { Button, PageHeader, useConfirm } from '@/components/admin/ui';
 
 // #21, #24 (show/hide), #25 — the product table.
 export default function AdminProducts() {
@@ -13,8 +14,9 @@ export default function AdminProducts() {
   const adminProductFilter = useZamzamStore((state) => state.adminProductFilter);
   const setAdminProductFilter = useZamzamStore((state) => state.setAdminProductFilter);
   const openProductEditor = useZamzamStore((state) => state.openProductEditor);
-  const setEditingProductId = useZamzamStore((state) => state.setEditingProductId);
-  const setAdminTab = useZamzamStore((state) => state.setAdminTab);
+  const editProduct = useZamzamStore((state) => state.editProduct);
+  const catalogVersion = useZamzamStore((state) => state.catalogVersion); // the pop-up closed: reload
+  const confirm = useConfirm();
   const money = useZamzamStore((state) => state.money);
   const t = useZamzamStore((state) => state.t);
   const showToast = useZamzamStore((state) => state.showToast);
@@ -37,13 +39,10 @@ export default function AdminProducts() {
       page,
       pageSize: 20,
     }),
-    [adminProductFilter, q, lowStock, page],
+    [adminProductFilter, q, lowStock, page, catalogVersion],
   );
 
-  const startEdit = (id: number) => {
-    setEditingProductId(id);
-    setAdminTab('editor');
-  };
+  const startEdit = (id: number) => editProduct(id);
 
   const toggle = async (row: AdminProductRow) => {
     try {
@@ -60,7 +59,11 @@ export default function AdminProducts() {
   };
 
   const remove = async (row: AdminProductRow) => {
-    if (!window.confirm(t(`حذف "${row.nameAr}"؟`, `Delete "${row.nameEn}"?`))) return;
+    if (!(await confirm({
+      title: t(`حذف "${row.nameAr}"؟`, `Delete "${row.nameEn}"?`),
+      message: t('إذا طُلب هذا المنتج من قبل، يُخفى ويبقى في الطلبات القديمة.', 'If it was ever ordered, it is hidden and kept in old orders.'),
+      confirmLabel: t('حذف', 'Delete'), danger: true,
+    }))) return;
     try {
       await deleteProduct(row.id);
       showToast(t('تم حذف المنتج', 'Product deleted'), 'success');
@@ -73,19 +76,13 @@ export default function AdminProducts() {
   const allCategories = (categories.data ?? []).flatMap((c) => [c, ...c.children]);
 
   return (
-    <section className="bg-white p-6 sm:p-8 rounded-2xl border border-[#e9e4dc] shadow-2xs space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e9e4dc]">
-        <div>
-          <span className="text-[11px] font-bold tracking-widest text-[#9c7c54] uppercase">PRODUCTS</span>
-          <h3 className="text-lg sm:text-xl font-serif font-bold text-[#142b4a] mt-0.5">{t('المنتجات والموديلات', 'Products & styles')}</h3>
-          <p className="text-xs text-[#79808b]">
-            {t('كل قسم ممكن يحتوي على موديلات كتير. اختاري القسم علشان تشوفي الأصناف الموجودة فيه.', 'Each category can contain many styles. Filter to manage them.')}
-          </p>
-        </div>
-        <button type="button" className="px-5 py-2.5 rounded-xl bg-[#142b4a] hover:bg-[#1e3a61] text-white text-xs font-bold transition-colors cursor-pointer self-start sm:self-auto" onClick={() => openProductEditor()}>
-          ＋ {t('منتج جديد', 'New product')}
-        </button>
-      </div>
+    <section className="space-y-6">
+      <PageHeader
+        eyebrow="PRODUCTS"
+        title={t('المنتجات والموديلات', 'Products & styles')}
+        description={t('كل قسم ممكن يحتوي على موديلات كتير. اضغطي “منتج جديد” لتفتح نافذة الإضافة.', 'Each category can hold many styles. Press “New product” to open the add window.')}
+        action={<Button onClick={() => openProductEditor()}>＋ {t('منتج جديد', 'New product')}</Button>}
+      />
 
       <div className="flex flex-wrap items-end gap-4">
         <label className="flex flex-col gap-1.5 text-xs font-bold text-[#2d3540] w-full sm:w-56">
