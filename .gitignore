@@ -13,3 +13,6 @@ desktop.ini
 
 # Office lock files
 ~$*
+
+# Output of backend/scripts/full-test.ps1
+backend/test-report.html

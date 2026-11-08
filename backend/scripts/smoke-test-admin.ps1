@@ -1,4 +1,4 @@
-# Logs in as the owner and tests the admin catalog APIs end to end, including a real photo upload
+﻿# Logs in as the owner and tests the admin catalog APIs end to end, including a real photo upload
 # to Supabase Storage. Everything it creates is deleted again at the end.
 # Start the API first (dotnet run --project src/Zamzam.Api), then run from the backend folder:
 #   powershell -ExecutionPolicy Bypass -File .\scripts\smoke-test-admin.ps1

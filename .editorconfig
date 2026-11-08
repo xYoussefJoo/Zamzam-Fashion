@@ -16,3 +16,7 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+
+# Windows PowerShell 5.1 reads UTF-8 without a BOM as ANSI, which garbles the Arabic in our scripts.
+[*.ps1]
+charset = utf-8-bom
