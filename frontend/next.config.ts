@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   poweredByHeader: false,
   partialPrefetching: true,
+  productionBrowserSourceMaps: false,
   turbopack: {
     rules: {
       "*.css": {

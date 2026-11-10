@@ -3,7 +3,17 @@
 // The dashboard's visual identity in one place: navy #142b4a, gold #b99664, cream #f7f3eb.
 // Every admin screen builds from these pieces, so they all look and behave the same.
 import React, { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {Metadata} from "next";
 import { useZamzamStore } from '@/store/useZamzamStore';
+
+export const metadata: Metadata = {
+  title: 'ZAMZAM FASHION',
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
 
 // ---------- class tokens
 export const ui = {
