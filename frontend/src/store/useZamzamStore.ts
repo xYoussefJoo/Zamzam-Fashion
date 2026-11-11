@@ -1,7 +1,20 @@
-import { create } from 'zustand';
-import type { AdminTab, CartLine, InitialRoute, Language, PageId, ToastMessage } from '@/types/zamzam';
-import { getCategories, getSiteSettings, trackingPath, type CategoryNode, type SiteContent } from '@/lib/shop';
-import { me, logout as apiLogout, type User } from '@/lib/admin';
+import { create } from "zustand";
+import type {
+  AdminTab,
+  CartLine,
+  InitialRoute,
+  Language,
+  PageId,
+  ToastMessage,
+} from "@/types/zamzam";
+import {
+  getCategories,
+  getSiteSettings,
+  trackingPath,
+  type CategoryNode,
+  type SiteContent,
+} from "@/lib/shop";
+import { me, logout as apiLogout, type User } from "@/lib/admin";
 
 // UI state + the bag. Products, orders and settings live on the server and are loaded by each screen
 // (src/lib/shop.ts, src/lib/admin.ts); only the site settings and the category tree are kept here,
@@ -50,10 +63,14 @@ export interface ZamzamState {
   refreshSite: () => Promise<void>;
   refreshCategories: () => Promise<void>;
 
-  showToast: (message: string, type?: 'success' | 'error', options?: { showCartLink?: boolean }) => void;
+  showToast: (
+    message: string,
+    type?: "success" | "error",
+    options?: { showCartLink?: boolean },
+  ) => void;
   hideToast: () => void;
 
-  addToCart: (line: Omit<CartLine, 'qty'>, qty?: number) => boolean;
+  addToCart: (line: Omit<CartLine, "qty">, qty?: number) => boolean;
   setCartQty: (variantId: number, qty: number) => void;
   removeFromCart: (variantId: number) => void;
   clearCart: () => void;
@@ -61,7 +78,7 @@ export interface ZamzamState {
   getSubtotal: () => number;
 }
 
-const CART_KEY = 'zamzam_cart_v1';
+const CART_KEY = "zamzam_cart_v1";
 const MAX_QTY = 10; // the API refuses more than 10 of one item per order
 
 const saveCart = (cart: CartLine[]) => {
@@ -74,8 +91,10 @@ const saveCart = (cart: CartLine[]) => {
 
 const loadCart = (): CartLine[] => {
   try {
-    const parsed = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
-    return Array.isArray(parsed) ? parsed.filter((l) => typeof l?.variantId === 'number' && l.qty > 0) : [];
+    const parsed = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+    return Array.isArray(parsed)
+      ? parsed.filter((l) => typeof l?.variantId === "number" && l.qty > 0)
+      : [];
   } catch {
     return [];
   }
@@ -83,28 +102,36 @@ const loadCart = (): CartLine[] => {
 
 const applyLanguage = (lang: Language) => {
   document.documentElement.lang = lang;
-  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  document.title = lang === 'ar' ? 'زمزم فاشون | أزياء وتفصيل' : 'Zamzam Fashion | Ready-to-wear & Tailoring';
+  document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+  document.title =
+    lang === "ar"
+      ? "زمزم فاشون | أزياء وتفصيل"
+      : "Zamzam Fashion | Ready-to-wear & Tailoring";
 };
 
 // The address bar shows a real, shareable address for product and tracking pages, and #page for the rest.
-const urlFor = (s: Pick<ZamzamState, 'page' | 'selectedSlug' | 'tracking' | 'adminOrderId'>) => {
-  if (s.page === 'product' && s.selectedSlug) return `/products/${encodeURIComponent(s.selectedSlug)}`;
-  if (s.page === 'track' && s.tracking) return trackingPath(s.tracking.number, s.tracking.token);
-  if (s.page === 'admin' && s.adminOrderId) return `/admin/orders/${s.adminOrderId}`;
-  if (s.page === 'home') return '/';
+const urlFor = (
+  s: Pick<ZamzamState, "page" | "selectedSlug" | "tracking" | "adminOrderId">,
+) => {
+  if (s.page === "product" && s.selectedSlug)
+    return `/products/${encodeURIComponent(s.selectedSlug)}`;
+  if (s.page === "track" && s.tracking)
+    return trackingPath(s.tracking.number, s.tracking.token);
+  if (s.page === "admin")
+    return s.adminOrderId ? `/admin/orders/${s.adminOrderId}` : "/admin";
+  if (s.page === "home") return "/";
   return `/#${s.page}`;
 };
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useZamzamStore = create<ZamzamState>((set, get) => ({
-  lang: 'ar',
-  page: 'home',
-  previousPage: 'home',
-  filter: 'all',
-  adminTab: 'overview',
-  adminProductFilter: 'all',
+  lang: "ar",
+  page: "home",
+  previousPage: "home",
+  filter: "all",
+  adminTab: "overview",
+  adminProductFilter: "all",
   productModal: null,
   catalogVersion: 0,
   selectedSlug: null,
@@ -119,34 +146,39 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
   isHydrated: false,
 
   initialize: (route) => {
-    if (typeof window === 'undefined') return;
-    let lang: Language = 'ar';
+    if (typeof window === "undefined") return;
+    let lang: Language = "ar";
     try {
-      lang = localStorage.getItem('zamzam_lang') === 'en' ? 'en' : 'ar';
+      lang = localStorage.getItem("zamzam_lang") === "en" ? "en" : "ar";
     } catch {}
     applyLanguage(lang);
 
-    let page: PageId = 'home';
+    let page: PageId = "home";
     let selectedSlug: string | null = null;
-    let tracking: ZamzamState['tracking'] = null;
+    let tracking: ZamzamState["tracking"] = null;
     let adminOrderId: number | null = null;
-    if (route && route.page === 'product') {
-      page = 'product';
+    if (route && route.page === "product") {
+      page = "product";
       selectedSlug = route.slug;
-    } else if (route && route.page === 'track') {
-      page = 'track';
+    } else if (route && route.page === "track") {
+      page = "track";
       tracking = { number: route.number, token: route.token };
-    } else if (route && route.page === 'admin') {
-      page = 'admin';
+    } else if (route && route.page === "admin") {
+      page = "admin";
       adminOrderId = route.orderId ?? null;
     } else {
       const hash = window.location.hash.slice(1) as PageId;
-      if (['home', 'shop', 'custom', 'orders', 'cart', 'admin'].includes(hash)) page = hash;
+      if (["home", "shop", "custom", "orders", "cart"].includes(hash))
+        page = hash;
     }
 
     set({
-      lang, page, selectedSlug, tracking, adminOrderId,
-      adminTab: adminOrderId ? 'orders' : 'overview',
+      lang,
+      page,
+      selectedSlug,
+      tracking,
+      adminOrderId,
+      adminTab: adminOrderId ? "orders" : "overview",
       cart: loadCart(),
       isHydrated: true,
     });
@@ -154,59 +186,81 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
     void get().refreshCategories();
   },
 
-  toggleLang: () => get().setLang(get().lang === 'ar' ? 'en' : 'ar'),
+  toggleLang: () => get().setLang(get().lang === "ar" ? "en" : "ar"),
 
   setLang: (lang) => {
     try {
-      localStorage.setItem('zamzam_lang', lang);
+      localStorage.setItem("zamzam_lang", lang);
     } catch {}
     applyLanguage(lang);
     set({ lang });
   },
 
-  t: (ar, en) => (get().lang === 'ar' ? ar : en),
+  t: (ar, en) => (get().lang === "ar" ? ar : en),
 
   money: (amount) => {
     const { lang } = get();
-    const formatted = Number(amount || 0).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 });
-    return `${formatted} ${lang === 'ar' ? 'ج.م' : 'EGP'}`;
+    const formatted = Number(amount || 0).toLocaleString(
+      lang === "ar" ? "ar-EG" : "en-US",
+      { maximumFractionDigits: 2 },
+    );
+    return `${formatted} ${lang === "ar" ? "ج.م" : "EGP"}`;
   },
 
   go: (p) => {
     const current = get().page;
-    set({ previousPage: current !== p ? current : get().previousPage, page: p });
-    if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', urlFor(get()));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    set({
+      previousPage: current !== p ? current : get().previousPage,
+      page: p,
+    });
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", urlFor(get()));
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   },
 
   openProduct: (slug) => {
     set({ selectedSlug: slug });
-    get().go('product');
+    get().go("product");
   },
 
   openTracking: (number, token) => {
     set({ tracking: { number, token } });
-    get().go('track');
+    get().go("track");
   },
 
   setFilter: (categorySlug) => set({ filter: categorySlug }),
   setAdminTab: (tab) => {
-    set({ adminTab: tab, adminOrderId: tab === 'orders' ? get().adminOrderId : null });
-    if (typeof window !== 'undefined' && get().page === 'admin') window.history.replaceState(null, '', urlFor(get()));
+    set({
+      adminTab: tab,
+      adminOrderId: tab === "orders" ? get().adminOrderId : null,
+    });
+    if (typeof window !== "undefined" && get().page === "admin")
+      window.history.replaceState(null, "", urlFor(get()));
   },
   setAdminProductFilter: (filter) => set({ adminProductFilter: filter }),
   openProductEditor: (categoryId = null) => {
     const { adminProductFilter } = get();
-    set({ productModal: { id: null, categoryId: categoryId ?? (adminProductFilter !== 'all' ? Number(adminProductFilter) : null) } });
+    set({
+      productModal: {
+        id: null,
+        categoryId:
+          categoryId ??
+          (adminProductFilter !== "all" ? Number(adminProductFilter) : null),
+      },
+    });
   },
   editProduct: (id) => set({ productModal: { id, categoryId: null } }),
-  setProductModalId: (id) => set((s) => ({ productModal: { id, categoryId: s.productModal?.categoryId ?? null } })),
-  closeProductModal: () => set((s) => ({ productModal: null, catalogVersion: s.catalogVersion + 1 })),
+  setProductModalId: (id) =>
+    set((s) => ({
+      productModal: { id, categoryId: s.productModal?.categoryId ?? null },
+    })),
+  closeProductModal: () =>
+    set((s) => ({ productModal: null, catalogVersion: s.catalogVersion + 1 })),
   setAdminOrderId: (id) => {
     set({ adminOrderId: id });
-    if (typeof window !== 'undefined' && get().page === 'admin') window.history.replaceState(null, '', urlFor(get()));
+    if (typeof window !== "undefined" && get().page === "admin")
+      window.history.replaceState(null, "", urlFor(get()));
   },
 
   // The session is the httpOnly cookie; /api/auth/me says whether it is still valid.
@@ -226,8 +280,8 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
     } catch {
       // already signed out on the server: nothing else to do
     }
-    set({ user: null, adminTab: 'overview', adminOrderId: null });
-    get().go('home');
+    set({ user: null, adminTab: "overview", adminOrderId: null });
+    get().go("home");
   },
 
   refreshSite: async () => {
@@ -251,9 +305,16 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
     set({ toast: null });
   },
 
-  showToast: (message, type = 'success', options) => {
+  showToast: (message, type = "success", options) => {
     if (toastTimer) clearTimeout(toastTimer);
-    set({ toast: { id: String(Date.now()), message, type, showCartLink: options?.showCartLink } });
+    set({
+      toast: {
+        id: String(Date.now()),
+        message,
+        type,
+        showCartLink: options?.showCartLink,
+      },
+    });
     toastTimer = setTimeout(() => set({ toast: null }), 4300);
   },
 
@@ -263,21 +324,32 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
     const wanted = (existing?.qty ?? 0) + Math.max(1, qty);
     const limit = Math.min(MAX_QTY, line.stock ?? MAX_QTY);
     if (wanted > limit) {
-      showToast(t('الكمية المطلوبة غير متوفرة في المخزون', 'Quantity unavailable in stock'), 'error');
+      showToast(
+        t(
+          "الكمية المطلوبة غير متوفرة في المخزون",
+          "Quantity unavailable in stock",
+        ),
+        "error",
+      );
       return false;
     }
     const next = existing
-      ? cart.map((x) => (x.variantId === line.variantId ? { ...x, ...line, qty: wanted } : x))
+      ? cart.map((x) =>
+          x.variantId === line.variantId ? { ...x, ...line, qty: wanted } : x,
+        )
       : [...cart, { ...line, qty: wanted }];
     set({ cart: next });
     saveCart(next);
 
-    const name = lang === 'ar' ? line.nameAr : line.nameEn;
-    const color = lang === 'ar' ? line.colorNameAr : line.colorNameEn;
-    const qtyText = qty > 1 ? ` (${qty})` : '';
+    const name = lang === "ar" ? line.nameAr : line.nameEn;
+    const color = lang === "ar" ? line.colorNameAr : line.colorNameEn;
+    const qtyText = qty > 1 ? ` (${qty})` : "";
     showToast(
-      t(`تمت إضافة ${name}${qtyText} للسلة — ${line.size} / ${color}`, `${name}${qtyText} added to your bag — ${line.size} / ${color}`),
-      'success',
+      t(
+        `تمت إضافة ${name}${qtyText} للسلة — ${line.size} / ${color}`,
+        `${name}${qtyText} added to your bag — ${line.size} / ${color}`,
+      ),
+      "success",
       { showCartLink: true },
     );
     return true;
@@ -285,7 +357,15 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
 
   setCartQty: (variantId, qty) => {
     const next = get().cart.map((x) =>
-      x.variantId === variantId ? { ...x, qty: Math.max(1, Math.min(qty, Math.min(MAX_QTY, x.stock ?? MAX_QTY))) } : x,
+      x.variantId === variantId
+        ? {
+            ...x,
+            qty: Math.max(
+              1,
+              Math.min(qty, Math.min(MAX_QTY, x.stock ?? MAX_QTY)),
+            ),
+          }
+        : x,
     );
     set({ cart: next });
     saveCart(next);
