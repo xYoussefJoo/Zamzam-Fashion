@@ -125,7 +125,11 @@ public static class DependencyInjection
         if (configuration["DataProtection:CertificateBase64"] is not { Length: > 0 } pfx)
             throw new InvalidOperationException(
                 "DataProtection:CertificateBase64 is required outside Development (run scripts/new-dataprotection-cert.ps1).");
-        var certificate = X509CertificateLoader.LoadPkcs12(Convert.FromBase64String(pfx), configuration["DataProtection:CertificatePassword"]);
-        dataProtection.ProtectKeysWithCertificate(certificate);
+        // MachineKeySet: IIS app pools on shared hosts (MonsterASP) have no user profile, so the default (key in the
+        // profile) fails with "The system cannot find the file specified"; EphemeralKeySet failed there too.
+        var certificate = X509CertificateLoader.LoadPkcs12(Convert.FromBase64String(pfx), configuration["DataProtection:CertificatePassword"],
+            X509KeyStorageFlags.MachineKeySet);
+        // Decrypt with this certificate directly too, instead of looking it up in a machine certificate store.
+        dataProtection.ProtectKeysWithCertificate(certificate).UnprotectKeysWithAnyCertificate(certificate);
     }
 }
