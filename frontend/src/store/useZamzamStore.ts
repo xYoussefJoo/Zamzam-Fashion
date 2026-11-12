@@ -100,6 +100,16 @@ const loadCart = (): CartLine[] => {
   }
 };
 
+// t() and money() for one language. They are rebuilt when the language changes: a component that only
+// reads t (not lang) is redrawn because t itself is a new function.
+const translators = (lang: Language) => ({
+  t: (ar: string, en: string) => (lang === "ar" ? ar : en),
+  money: (amount: number | null | undefined) => {
+    const formatted = Number(amount || 0).toLocaleString(lang === "ar" ? "ar-EG" : "en-US", { maximumFractionDigits: 2 });
+    return `${formatted} ${lang === "ar" ? "ج.م" : "EGP"}`;
+  },
+});
+
 const applyLanguage = (lang: Language) => {
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
@@ -111,14 +121,16 @@ const applyLanguage = (lang: Language) => {
 
 // The address bar shows a real, shareable address for product and tracking pages, and #page for the rest.
 const urlFor = (
-  s: Pick<ZamzamState, "page" | "selectedSlug" | "tracking" | "adminOrderId">,
+  s: Pick<ZamzamState, "page" | "selectedSlug" | "tracking" | "adminOrderId" | "adminTab">,
 ) => {
   if (s.page === "product" && s.selectedSlug)
     return `/products/${encodeURIComponent(s.selectedSlug)}`;
   if (s.page === "track" && s.tracking)
     return trackingPath(s.tracking.number, s.tracking.token);
   if (s.page === "admin")
-    return s.adminOrderId ? `/admin/orders/${s.adminOrderId}` : "/admin";
+    return s.adminOrderId
+      ? `/admin/orders/${s.adminOrderId}`
+      : s.adminTab === "overview" ? "/admin" : `/admin/${s.adminTab}`;
   if (s.page === "home") return "/";
   return `/#${s.page}`;
 };
@@ -157,6 +169,7 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
     let selectedSlug: string | null = null;
     let tracking: ZamzamState["tracking"] = null;
     let adminOrderId: number | null = null;
+    let adminTab: AdminTab = "overview";
     if (route && route.page === "product") {
       page = "product";
       selectedSlug = route.slug;
@@ -166,6 +179,7 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
     } else if (route && route.page === "admin") {
       page = "admin";
       adminOrderId = route.orderId ?? null;
+      adminTab = adminOrderId ? "orders" : (route.tab ?? "overview");
     } else {
       const hash = window.location.hash.slice(1) as PageId;
       if (["home", "shop", "custom", "orders", "cart"].includes(hash))
@@ -174,11 +188,12 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
 
     set({
       lang,
+      ...translators(lang),
       page,
       selectedSlug,
       tracking,
       adminOrderId,
-      adminTab: adminOrderId ? "orders" : "overview",
+      adminTab,
       cart: loadCart(),
       isHydrated: true,
     });
@@ -193,19 +208,11 @@ export const useZamzamStore = create<ZamzamState>((set, get) => ({
       localStorage.setItem("zamzam_lang", lang);
     } catch {}
     applyLanguage(lang);
-    set({ lang });
+    // New t/money functions on every switch, so every screen that uses them redraws in the new language.
+    set({ lang, ...translators(lang) });
   },
 
-  t: (ar, en) => (get().lang === "ar" ? ar : en),
-
-  money: (amount) => {
-    const { lang } = get();
-    const formatted = Number(amount || 0).toLocaleString(
-      lang === "ar" ? "ar-EG" : "en-US",
-      { maximumFractionDigits: 2 },
-    );
-    return `${formatted} ${lang === "ar" ? "ج.م" : "EGP"}`;
-  },
+  ...translators("ar"),
 
   go: (p) => {
     const current = get().page;

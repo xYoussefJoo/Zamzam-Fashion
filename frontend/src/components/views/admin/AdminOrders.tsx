@@ -10,6 +10,7 @@ import {
 } from '@/lib/admin';
 import { pick, statusLabel } from '@/lib/shop';
 import { Button, Modal, useConfirm, useModalDirty } from '@/components/admin/ui';
+import Select from '@/components/ui/Select';
 
 const ALL_STATUSES = Object.keys(statusLabel) as OrderStatus[];
 
@@ -49,15 +50,15 @@ function OrderBoard({ onOpen }: { onOpen: (id: number) => void }) {
           <p className="text-xs text-[#77808b] mt-0.5">{data && t(`عدد النتائج: ${data.totalCount}`, `${data.totalCount} orders`)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <select aria-label={t('الحالة', 'Status')} value={status} onChange={(e) => setStatus(e.target.value as OrderStatus | '')} className={select}>
+          <Select aria-label={t('الحالة', 'Status')} value={status} onChange={(e) => setStatus(e.target.value as OrderStatus | '')} className={select}>
             <option value="">{t('كل الحالات', 'All statuses')}</option>
             {ALL_STATUSES.map((s) => <option key={s} value={s}>{t(...statusLabel[s])}</option>)}
-          </select>
-          <select aria-label={t('النوع', 'Type')} value={type} onChange={(e) => setType(e.target.value as '' | 'Ready' | 'Custom')} className={select}>
+          </Select>
+          <Select aria-label={t('النوع', 'Type')} value={type} onChange={(e) => setType(e.target.value as '' | 'Ready' | 'Custom')} className={select}>
             <option value="">{t('كل الأنواع', 'All types')}</option>
             <option value="Ready">{t('جاهز', 'Ready')}</option>
             <option value="Custom">{t('تفصيل خاص', 'Custom')}</option>
-          </select>
+          </Select>
           <input type="search" aria-label={t('بحث', 'Search')} placeholder={t('رقم الطلب أو الهاتف أو الاسم', 'Number, phone or name')}
             value={search} onChange={(e) => setSearch(e.target.value)} className={`${select} cursor-text w-56`} />
         </div>
@@ -73,9 +74,9 @@ function OrderBoard({ onOpen }: { onOpen: (id: number) => void }) {
       ) : data.items.length > 0 ? (
         <div className={`overflow-x-auto ${loading ? 'opacity-60' : ''}`}>
           <table className="w-full text-sm text-start">
-            <thead className="bg-[#f7f3eb] text-[#77808b] text-[11px] uppercase tracking-wider border-b border-[#e8dfd1]">
+            <thead className="bg-[#f7f3eb] text-[#77808b] text-xs uppercase tracking-wider border-b border-[#e8dfd1]">
               <tr>
-                <th className="px-5 py-3.5 text-start font-bold">#</th>
+                <th className="px-5 py-3.5 text-start font-bold">{t('الكود', 'Code')}</th>
                 <th className="px-5 py-3.5 text-start font-bold">{t('العميل', 'Customer')}</th>
                 <th className="px-5 py-3.5 text-start font-bold">{t('النوع', 'Type')}</th>
                 <th className="px-5 py-3.5 text-start font-bold">{t('الإجمالي', 'Total')}</th>
@@ -85,9 +86,9 @@ function OrderBoard({ onOpen }: { onOpen: (id: number) => void }) {
             <tbody className="divide-y divide-[#e8e3d9]">
               {data.items.map((o) => (
                 <tr key={o.id} onClick={() => onOpen(o.id)} className="hover:bg-[#faf7f2] transition-colors duration-150 cursor-pointer">
-                  <td className="px-5 py-4 font-mono text-xs text-[#142b4a] font-bold" dir="ltr">
+                  <td className="px-5 py-4 font-mono text-sm text-[#142b4a] font-bold whitespace-nowrap" dir="ltr">
                     {o.number}
-                    <div className="text-[10px] text-[#77808b] font-sans font-normal">{new Date(o.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB')}</div>
+                    <div className="text-[14px] text-[#77808b] font-sans font-normal">{new Date(o.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB')}</div>
                   </td>
                   <td className="px-5 py-4">
                     <div className="font-bold text-[#142b4a]">{o.customerName}</div>
@@ -101,7 +102,7 @@ function OrderBoard({ onOpen }: { onOpen: (id: number) => void }) {
                   </td>
                   <td className="px-5 py-4 font-extrabold text-[#b99664]">
                     {money(o.total)}
-                    <div className={`text-[11px] font-bold ${o.paymentStatus === 'Paid' ? 'text-green-700' : 'text-amber-800'}`}>
+                    <div className={`text-xs font-bold ${o.paymentStatus === 'Paid' ? 'text-green-700' : 'text-amber-800'}`}>
                       {o.paymentStatus === 'Paid' ? t('مدفوع', 'Paid') : t('غير مدفوع', 'Unpaid')}
                     </div>
                   </td>
@@ -216,7 +217,7 @@ function OrderDetail({ id, onBack }: { id: number; onBack: () => void }) {
                   <a href={tailoring.referenceImageUrl} target="_blank" rel="noopener noreferrer" className="inline-block">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={tailoring.referenceImageUrl} alt={t('صورة التصميم', 'Reference photo')} className="w-40 h-52 object-cover rounded-xl border border-[#e8dfd1]" />
-                    <span className="block text-[11px] text-[#77808b] mt-1">{t('الرابط صالح 10 دقائق', 'Link valid for 10 minutes')}</span>
+                    <span className="block text-xs text-[#77808b] mt-1">{t('الرابط صالح 10 دقائق', 'Link valid for 10 minutes')}</span>
                   </a>
                 )}
                 <div className="flex flex-wrap gap-6 pt-3 border-t border-[#e8dfd1] text-sm">
@@ -288,7 +289,7 @@ function OrderDetail({ id, onBack }: { id: number; onBack: () => void }) {
           {lastLink && (
             <section className={`${card} space-y-2`}>
               <h4 className="font-bold text-[#142b4a] text-sm">{t('رابط موافقة العميلة', 'Customer approval link')}</h4>
-              <p className="text-[11px] text-[#5e605b] break-all font-mono select-all" dir="ltr">{lastLink}</p>
+              <p className="text-xs text-[#5e605b] break-all font-mono select-all" dir="ltr">{lastLink}</p>
               <Button size="sm" variant="secondary" onClick={() => void navigator.clipboard?.writeText(lastLink).then(() => showToast(t('تم النسخ', 'Copied'), 'success'), () => {})}>{t('نسخ لإرساله واتساب', 'Copy to send on WhatsApp')}</Button>
             </section>
           )}

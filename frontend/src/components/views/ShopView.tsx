@@ -6,6 +6,7 @@ import { useApi, usePage } from '@/lib/useApi';
 import { errorText } from '@/lib/api';
 import { pick, searchProducts, type ProductQuery } from '@/lib/shop';
 import ProductCard from '@/components/shop/ProductCard';
+import Select from '@/components/ui/Select';
 
 const PAGE_SIZE = 12;
 type Sort = NonNullable<ProductQuery['sort']>;
@@ -75,7 +76,7 @@ export default function ShopView() {
             className="w-full sm:w-56 px-4 py-2.5 rounded-full bg-white border border-[#e8dfd1] text-sm focus:outline-none focus:border-[#b99664]"
           />
           <label className="sr-only" htmlFor="shop-sort">{t('الترتيب', 'Sort')}</label>
-          <select
+          <Select
             id="shop-sort"
             value={sort}
             onChange={(e) => setSort(e.target.value as Sort)}
@@ -85,7 +86,7 @@ export default function ShopView() {
             <option value="price_asc">{t('السعر: من الأقل', 'Price: low to high')}</option>
             <option value="price_desc">{t('السعر: من الأعلى', 'Price: high to low')}</option>
             <option value="name">{t('الاسم', 'Name')}</option>
-          </select>
+          </Select>
         </div>
       </div>
 

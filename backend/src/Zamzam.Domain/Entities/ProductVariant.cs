@@ -53,5 +53,14 @@ public class ProductVariant : Entity
     // Called when an order is cancelled.
     public void Restock(int quantity) => Stock += Guard.Positive(quantity, "Quantity");
 
+    // A manual change from the Warehouse (+received, -damaged, ±correction). Stock never goes below 0.
+    public void Adjust(int change)
+    {
+        if (change == 0) throw new DomainException(ErrorCodes.Validation, "The change can't be 0.");
+        if (Stock + change < 0)
+            throw new DomainException(ErrorCodes.NegativeStock, $"Only {Stock} in stock for {Sku}; it can't go below 0.");
+        Stock += change;
+    }
+
     internal void SoftDelete() => IsDeleted = true;
 }

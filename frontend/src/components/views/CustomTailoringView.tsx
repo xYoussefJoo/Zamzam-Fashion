@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState, ChangeEvent, FormEvent } f
 import { useZamzamStore } from '@/store/useZamzamStore';
 import { useApi } from '@/lib/useApi';
 import { ApiError, errorText, fieldError } from '@/lib/api';
+import Select from '@/components/ui/Select';
 import {
   getDeliveryZones, getEstimate, getTailoringCatalog, newKey, pick, placeTailoringRequest, rememberOrder,
   type Estimate, type TailoringCatalog,
@@ -178,7 +179,7 @@ function TailoringForm({ catalog }: { catalog: TailoringCatalog }) {
     'border border-[#e8e3d9] rounded-xl p-3 bg-white text-[#142b4a] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664] focus:border-[#b99664] transition-all';
   const fieldMsg = (name: string) => {
     const msg = fieldError(error, name);
-    return msg ? <small className="text-[11px] font-semibold text-[#a72f3e]">{msg}</small> : null;
+    return msg ? <small className="text-xs font-semibold text-[#a72f3e]">{msg}</small> : null;
   };
   const toggleExtra = (key: string) => setExtras((list) => (list.includes(key) ? list.filter((k) => k !== key) : [...list, key]));
 
@@ -197,39 +198,39 @@ function TailoringForm({ catalog }: { catalog: TailoringCatalog }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
             <span>{t('نوع القطعة', 'Garment type')} *</span>
-            <select value={garment} onChange={(e) => chooseGarment(e.target.value)} className={inputClasses}>
+            <Select value={garment} onChange={(e) => chooseGarment(e.target.value)} className={inputClasses}>
               {catalog.garments.map((g) => (
                 <option key={g.key} value={g.key}>{pick(lang, g.nameAr, g.nameEn)}</option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
             <span>{t('اختاري موديل من المقترحات', 'Choose a suggested style')}</span>
-            <select value={styleId} onChange={(e) => chooseStyle(e.target.value)} className={inputClasses}>
+            <Select value={styleId} onChange={(e) => chooseStyle(e.target.value)} className={inputClasses}>
               <option value="">{t('تصميم خاص من عندي (سأرفع صورة)', 'My own custom design (upload image)')}</option>
               {styles.map((s) => (
                 <option key={s.id} value={s.id}>{pick(lang, s.nameAr, s.nameEn)}</option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
             <span>{t('نوع القماش المفضل', 'Preferred fabric')} *</span>
-            <select value={fabric} onChange={(e) => setFabric(e.target.value)} className={inputClasses}>
+            <Select value={fabric} onChange={(e) => setFabric(e.target.value)} className={inputClasses}>
               {catalog.fabrics.map((f) => (
                 <option key={f.key} value={f.key}>{pick(lang, f.nameAr, f.nameEn)}</option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
             <span>{t('نوع القصة', 'Silhouette / Fit')} *</span>
-            <select value={fit} onChange={(e) => setFit(e.target.value)} className={inputClasses}>
+            <Select value={fit} onChange={(e) => setFit(e.target.value)} className={inputClasses}>
               {catalog.fits.map((f) => (
                 <option key={f.key} value={f.key}>{pick(lang, f.nameAr, f.nameEn)}</option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
@@ -371,12 +372,12 @@ function TailoringForm({ catalog }: { catalog: TailoringCatalog }) {
           </label>
           <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
             <span>{t('المحافظة', 'Governorate')} *</span>
-            <select required value={zoneId} onChange={(e) => setZoneId(e.target.value ? Number(e.target.value) : '')} className={`${inputClasses} cursor-pointer`}>
+            <Select required value={zoneId} onChange={(e) => setZoneId(e.target.value ? Number(e.target.value) : '')} className={`${inputClasses} cursor-pointer`}>
               <option value="">{t('اختاري المحافظة', 'Choose governorate')}</option>
               {zones.data?.map((z) => (
                 <option key={z.id} value={z.id}>{pick(lang, z.nameAr, z.nameEn)} — {money(z.fee)}</option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
             <span>{t('المدينة / المنطقة', 'City / district')} *</span>
@@ -391,7 +392,7 @@ function TailoringForm({ catalog }: { catalog: TailoringCatalog }) {
           <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540] sm:col-span-2">
             <span>{t('البريد الإلكتروني (اختياري)', 'Email (optional)')}</span>
             <input type="email" maxLength={254} autoComplete="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClasses} placeholder="name@example.com" />
-            <small className="text-[11px] font-medium text-[#77808b]">
+            <small className="text-xs font-medium text-[#77808b]">
               {t('نرسل لكِ السعر النهائي ورابط الموافقة عليه', "We'll email you the final price and the link to approve it")}
             </small>
             {fieldMsg('customer.email')}
@@ -412,7 +413,7 @@ function TailoringForm({ catalog }: { catalog: TailoringCatalog }) {
               ))}
             </ul>
           )}
-          <p className="text-[11px] text-[#70542d]">{estimate ? pick(lang, estimate.noteAr, estimate.noteEn) : ''}</p>
+          <p className="text-xs text-[#70542d]">{estimate ? pick(lang, estimate.noteAr, estimate.noteEn) : ''}</p>
         </div>
 
         <label className="flex items-start gap-3 text-xs text-[#2d3540] cursor-pointer leading-relaxed">

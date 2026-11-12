@@ -11,6 +11,7 @@ public interface IAppDbContext
     DbSet<Category> Categories { get; }
     DbSet<Product> Products { get; }
     DbSet<ProductVariant> ProductVariants { get; }
+    DbSet<StockMovement> StockMovements { get; }
     DbSet<ProductImage> ProductImages { get; }
     DbSet<Color> Colors { get; }
     DbSet<Order> Orders { get; }

@@ -56,7 +56,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Floating Category Pill */}
-        <span className="absolute top-3.5 start-3.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white/90 backdrop-blur-sm text-[#142b4a] shadow-xs">
+        <span className="absolute top-3.5 start-3.5 px-3 py-1 rounded-full text-xs font-bold bg-white/90 backdrop-blur-sm text-[#142b4a] shadow-xs">
           {categoryName}
         </span>
 
@@ -103,7 +103,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Price & Action Link */}
         <div className="flex items-center justify-between pt-3 border-t border-[#e8e3d9] mt-2">
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-[#77808b] uppercase tracking-wider">
+            <span className="text-[14px] font-bold text-[#77808b] uppercase tracking-wider">
               {hasRange ? t('يبدأ من', 'FROM') : t('السعر', 'PRICE')}
             </span>
             <span className="font-extrabold text-[#b99664] text-lg tracking-tight">{money(product.minPrice)}</span>

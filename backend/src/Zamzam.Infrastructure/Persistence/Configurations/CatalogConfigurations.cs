@@ -78,6 +78,17 @@ internal sealed class ProductImageConfiguration : IEntityTypeConfiguration<Produ
     }
 }
 
+internal sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockMovement>
+{
+    public void Configure(EntityTypeBuilder<StockMovement> builder)
+    {
+        builder.Property(m => m.Note).HasMaxLength(200);
+        builder.Property(m => m.CreatedBy).HasMaxLength(450); // Identity user ids
+        builder.HasOne<ProductVariant>().WithMany().HasForeignKey(m => m.VariantId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(m => new { m.VariantId, m.CreatedAt }); // a variant's history, newest first
+    }
+}
+
 internal sealed class ColorConfiguration : IEntityTypeConfiguration<Color>
 {
     public void Configure(EntityTypeBuilder<Color> builder)

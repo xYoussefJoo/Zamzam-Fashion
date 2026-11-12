@@ -77,7 +77,7 @@ export default function Toast() {
           <strong className="block text-xs font-bold text-[#142b4a]">
             {isError ? t('تنبيه', 'Notice') : t('تم بنجاح', 'Success')}
           </strong>
-          <span className="block text-[11px] text-[#5d5b57] leading-relaxed break-words">
+          <span className="block text-xs text-[#5d5b57] leading-relaxed break-words">
             {toast.message}
           </span>
         </div>
@@ -86,7 +86,7 @@ export default function Toast() {
           {toast.showCartLink && (
             <button
               type="button"
-              className="bg-[#142b4a] hover:bg-[#1f3d65] text-white text-[11px] font-bold px-2.5 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap"
+              className="bg-[#142b4a] hover:bg-[#1f3d65] text-white text-xs font-bold px-2.5 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap"
               onClick={handleViewCart}
             >
               {t('عرض السلة', 'View cart')}

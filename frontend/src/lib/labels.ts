@@ -15,6 +15,7 @@ export const adminTabsLabels: Record<string, [string, string]> = {
   overview: ['نظرة عامة', 'Overview'],
   categories: ['الأقسام', 'Categories'],
   products: ['المنتجات', 'Products'],
+  warehouse: ['المخزن', 'Warehouse'],
   orders: ['الطلبات والتصنيع', 'Orders & production'],
   colors: ['الألوان', 'Colors'],
   zones: ['مناطق التوصيل', 'Delivery zones'],

@@ -49,7 +49,16 @@ export default function RootLayout({
       lang="ar"
       dir="rtl"
       className={`${cairo.variable} ${tajawal.variable} ${dmSans.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Apply the saved language before the first paint, so English visitors don't see the page flip from right-to-left. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "try{if(localStorage.getItem('zamzam_lang')==='en'){var d=document.documentElement;d.lang='en';d.dir='ltr'}}catch(e){}",
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

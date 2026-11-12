@@ -5,6 +5,7 @@ using Zamzam.Application.Catalog;
 using Zamzam.Application.Common;
 using Zamzam.Domain.Constants;
 using Zamzam.Domain.Entities;
+using Zamzam.Domain.Enums;
 using Zamzam.Domain.Exceptions;
 using Zamzam.Domain.ValueObjects;
 
@@ -137,10 +138,16 @@ public sealed class PlaceOrderHandler(
             throw new ConflictException(ErrorCodes.PriceChanged, "Prices or the delivery fee changed. Please review the new total.",
                 new Dictionary<string, object?> { ["subtotal"] = subtotal, ["deliveryFee"] = zone.Fee, ["total"] = total });
 
-        foreach (var line in lines) found[line.VariantId].Variant.Reserve(line.Qty);
+        var number = await numbers.NextAsync(ct);
+        foreach (var line in lines)
+        {
+            found[line.VariantId].Variant.Reserve(line.Qty);
+            // Stock history: written by the checkout itself (no owner), in the same save as the order.
+            db.StockMovements.Add(new StockMovement(line.VariantId, -line.Qty, StockReason.Sold, number, createdBy: null));
+        }
 
         var (token, hash) = TrackingTokens.Create();
-        var order = Order.CreateReady(await numbers.NextAsync(ct), hash, customer, zone.Id, zone.Fee, drafts,
+        var order = Order.CreateReady(number, hash, customer, zone.Id, zone.Fee, drafts,
             clock.GetUtcNow().UtcDateTime);
         db.Orders.Add(order);
         await db.SaveChangesAsync(ct); // fails with a concurrency error if a variant changed since we read it

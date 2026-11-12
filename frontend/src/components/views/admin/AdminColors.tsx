@@ -49,7 +49,7 @@ export default function AdminColors() {
                 <span className="w-10 h-10 rounded-full border border-black/10 shrink-0 shadow-inner" style={{ backgroundColor: c.hex }} />
                 <span className="min-w-0">
                   <b className="block text-sm text-[#142b4a] truncate">{c.nameAr} · {c.nameEn}</b>
-                  <small className="text-[11px] text-[#77808a]"><span dir="ltr" className="font-mono">{c.hex}</span> · {c.usageCount} {t('مقاس يستخدمه', 'variants')}</small>
+                  <small className="text-xs text-[#77808a]"><span dir="ltr" className="font-mono">{c.hex}</span> · {c.usageCount} {t('مقاس يستخدمه', 'variants')}</small>
                 </span>
               </span>
               <span className="flex gap-1.5 shrink-0">

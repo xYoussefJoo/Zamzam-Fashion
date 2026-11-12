@@ -41,6 +41,9 @@ export const getDeliveryZones = () => call(api.GET('/api/delivery-zones'));
 export const placeOrder = (body: Schemas['PlaceOrderCommand'], idempotencyKey: string) =>
   call(api.POST('/api/orders', { body, params: { header: { 'Idempotency-Key': idempotencyKey } } }));
 
+// Track without the link: order number + the phone or email used at checkout.
+export const lookupOrder = (number: string, contact: string) =>
+  call(api.POST('/api/orders/lookup', { body: { number, contact } }));
 export const trackOrder = (number: string, token: string) =>
   call(api.GET('/api/orders/{number}', { params: { path: { number }, header: { 'X-Tracking-Token': token } } }));
 

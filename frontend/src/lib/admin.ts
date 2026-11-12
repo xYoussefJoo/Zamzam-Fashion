@@ -36,7 +36,10 @@ export const updateCategory = (id: number, body: Schemas['SaveCategoryCommand'])
 export const deleteCategory = (id: number) => call(api.DELETE('/api/admin/categories/{id}', { params: { path: { id } } }));
 
 // ---------- products (#21–#25)
-export type AdminProductQuery = { categoryId?: number; q?: string; isVisible?: boolean; lowStock?: boolean; sort?: string; page?: number; pageSize?: number };
+export type AdminProductQuery = {
+  categoryId?: number; q?: string; isVisible?: boolean; lowStock?: boolean; sort?: string; page?: number; pageSize?: number;
+  colorId?: number; size?: string; status?: 'all' | 'low' | 'out' | 'in'; // matched on the same size/colour
+};
 export const getAdminProducts = (query: AdminProductQuery) => call(api.GET('/api/admin/products', { params: { query } }));
 export const getAdminProduct = (id: number) => call(api.GET('/api/admin/products/{id}', { params: { path: { id } } }));
 export const createProduct = (body: Schemas['CreateProductCommand']) => call(api.POST('/api/admin/products', { body }));
@@ -105,3 +108,16 @@ export function nextStatuses(type: 'Ready' | 'Custom', status: OrderStatus): Ord
   if (cancel.includes(status)) next.push('Cancelled');
   return next;
 }
+
+// ---------- inventory tab: every size/colour with its stock; stock edits reuse updateVariant (send the row's version)
+export type InventoryRow = Schemas['InventoryRow'];
+export type InventoryQuery = { q?: string; status?: 'all' | 'low' | 'out' | 'in' | 'attention'; categoryId?: number; colorId?: number; size?: string; page?: number; pageSize?: number };
+export const getInventory = (query: InventoryQuery) => call(api.GET('/api/admin/inventory', { params: { query } }));
+
+// Stock is only changed here, always with a reason; every change is kept in the variant's history.
+export type StockReason = Schemas['StockReason'];
+export type StockMovement = Schemas['StockMovementDto'];
+export const adjustStock = (variantId: number, body: Schemas['AdjustStockCommand']) =>
+  call(api.POST('/api/admin/variants/{id}/stock', { params: { path: { id: variantId } }, body }));
+export const getStockMovements = (variantId: number) =>
+  call(api.GET('/api/admin/variants/{id}/movements', { params: { path: { id: variantId } } }));

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Zamzam.Application.Common;
+using Zamzam.Domain.Common;
 using Zamzam.Domain.Entities;
+using Zamzam.Domain.Exceptions;
 
 namespace Zamzam.Application.Orders;
 
@@ -15,7 +17,11 @@ public sealed class TrackOrderHandler(IAppDbContext db)
             .FirstOrDefaultAsync(o => o.Number == number, ct);
         if (order is null || !TrackingTokens.Matches(token, order.TrackingTokenHash))
             throw new NotFoundException("Order");
+        return await ToPublicAsync(db, order, ct);
+    }
 
+    internal static async Task<PublicOrderDto> ToPublicAsync(IAppDbContext db, Order order, CancellationToken ct)
+    {
         var zone = await db.DeliveryZones.AsNoTracking().FirstAsync(z => z.Id == order.DeliveryZoneId, ct);
         var t = order.Tailoring;
 
@@ -37,4 +43,32 @@ public sealed class TrackOrderHandler(IAppDbContext db)
     // "+201012345678" -> "+20101****678"
     internal static string MaskPhone(string phone) =>
         phone.Length <= 9 ? "****" : phone[..6] + "****" + phone[^3..];
+}
+
+// POST /api/orders/lookup — "track my order" without the link: the order number plus the phone or email used at checkout.
+// A wrong number and a wrong phone/email give the same 404, and the Tracking rate limit stops guessing.
+public sealed record LookupOrderCommand(string Number, string Contact);
+
+public sealed class LookupOrderHandler(IAppDbContext db)
+{
+    public async Task<PublicOrderDto> HandleAsync(LookupOrderCommand command, CancellationToken ct)
+    {
+        var number = (command.Number ?? "").Trim().ToUpperInvariant();
+        var contact = (command.Contact ?? "").Trim();
+        if (number.Length is 0 or > 20 || contact.Length is 0 or > 254) throw new NotFoundException("Order");
+
+        var order = await db.Orders.AsNoTracking()
+            .Include(o => o.Lines).Include(o => o.History).Include(o => o.Tailoring)
+            .FirstOrDefaultAsync(o => o.Number == number, ct);
+        if (order is null || !Matches(order, contact)) throw new NotFoundException("Order");
+        return await TrackOrderHandler.ToPublicAsync(db, order, ct);
+    }
+
+    private static bool Matches(Order order, string contact)
+    {
+        if (contact.Contains('@'))
+            return order.Customer.Email is { } email && string.Equals(email, contact.ToLowerInvariant(), StringComparison.Ordinal);
+        try { return EgyptianPhone.Normalize(contact) == order.Customer.Phone; }
+        catch (DomainException) { return false; }
+    }
 }

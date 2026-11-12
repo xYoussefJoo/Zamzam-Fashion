@@ -59,7 +59,7 @@ export default function AdminOverview() {
           <button type="button" className="px-4 py-2.5 rounded-lg bg-[#142b4a] hover:bg-[#1e3a61] text-white text-xs font-bold transition-colors cursor-pointer" onClick={() => setAdminTab('orders')}>
             {t('الطلبات', 'Orders')}
           </button>
-          <button type="button" className="px-4 py-2.5 rounded-lg border border-[#cdbb9e] bg-white hover:bg-[#f7f3eb] text-xs font-bold text-[#142b4a] transition-colors cursor-pointer" onClick={() => openProductEditor()}>
+          <button type="button" className="px-4 py-2.5 rounded-lg border border-[#cdbb9e] bg-white hover:bg-[#f7f3eb] text-xs font-bold text-[#142b4a] transition-colors cursor-pointer" onClick={() => { setAdminTab('warehouse'); openProductEditor(); }}>
             ＋ {t('إضافة منتج', 'Add product')}
           </button>
           <button type="button" className="px-4 py-2.5 rounded-lg border border-[#cdbb9e] bg-white hover:bg-[#f7f3eb] text-xs font-bold text-[#142b4a] transition-colors cursor-pointer" onClick={() => setAdminTab('categories')}>
@@ -83,7 +83,7 @@ export default function AdminOverview() {
                   <span className="text-xs text-[#77808a] truncate block">{o.customerName} · {pick(lang, o.zoneNameAr, o.zoneNameEn)}</span>
                 </span>
                 <span className="text-end shrink-0">
-                  <span className="block text-[11px] font-bold text-[#a27b4e]">{t(...statusLabel[o.status])}</span>
+                  <span className="block text-xs font-bold text-[#a27b4e]">{t(...statusLabel[o.status])}</span>
                   <span className="text-xs font-bold text-[#142b4a]">{money(o.total)}</span>
                 </span>
               </button>

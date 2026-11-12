@@ -127,7 +127,11 @@ public sealed class ChangeOrderStatusHandler(IAppDbContext db, IUserDirectory us
                     var ids = returns.Select(r => r.VariantId).ToList();
                     var variants = await db.ProductVariants.Where(v => ids.Contains(v.Id)).ToDictionaryAsync(v => v.Id, ct);
                     // A variant deleted for good can't come back; soft-deleted ones still get their stock.
-                    foreach (var r in returns.Where(r => variants.ContainsKey(r.VariantId))) variants[r.VariantId].Restock(r.Quantity);
+                    foreach (var r in returns.Where(r => variants.ContainsKey(r.VariantId)))
+                    {
+                        variants[r.VariantId].Restock(r.Quantity);
+                        db.StockMovements.Add(new StockMovement(r.VariantId, r.Quantity, StockReason.Returned, order.Number, userId));
+                    }
                 }
 
                 await db.SaveChangesAsync(ct); // order + stock in one save = one transaction

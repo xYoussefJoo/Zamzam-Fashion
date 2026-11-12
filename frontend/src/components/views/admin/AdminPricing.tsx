@@ -6,6 +6,8 @@ import { useApi } from '@/lib/useApi';
 import { ApiError, errorText } from '@/lib/api';
 import { getAdminTailoringCatalog, getPriceRules, savePriceRules, type PriceRules } from '@/lib/admin';
 import { adminSizes } from '@/lib/labels';
+import { Button, Field, Modal, ui, useModalDirty } from '@/components/admin/ui';
+import Select from '@/components/ui/Select';
 
 // #45–#46 — the rules behind the instant price estimate. New estimates use them right away; existing orders keep theirs.
 // Base price = the style's own price if it has one, otherwise its garment's price.
@@ -16,6 +18,7 @@ function AdminPricingEditor({ data, reload }: { data: PriceRules; reload: () => 
   const catalog = useApi(getAdminTailoringCatalog, []);
   const [p, setP] = useState<PriceRules | null>(() => structuredClone(data));
   const [busy, setBusy] = useState(false);
+  const [adding, setAdding] = useState<'garment' | 'style' | null>(null);
 
   if (!p) return <div className="h-96 rounded-2xl bg-[#f7f3eb] animate-pulse" />;
 
@@ -48,7 +51,7 @@ function AdminPricingEditor({ data, reload }: { data: PriceRules; reload: () => 
   const txt = 'border border-[#dedbd5] rounded-lg p-1.5 bg-white text-xs flex-1 min-w-[90px]';
   const box = 'bg-white p-6 rounded-2xl border border-[#e9e4dc] shadow-2xs space-y-3';
   const del = (onClick: () => void) => (
-    <button type="button" onClick={onClick} aria-label={t('حذف', 'Remove')} className="px-2 py-1 rounded-lg border border-[#efc9c9] bg-[#fff7f7] text-[#a34c4c] text-[11px] font-bold cursor-pointer">✕</button>
+    <button type="button" onClick={onClick} aria-label={t('حذف', 'Remove')} className="px-2 py-1 rounded-lg border border-[#efc9c9] bg-[#fff7f7] text-[#a34c4c] text-xs font-bold cursor-pointer">✕</button>
   );
   const add = (label: [string, string], onClick: () => void) => (
     <button type="button" onClick={onClick} className="px-3 py-1.5 rounded-lg border border-[#cdbb9e] text-xs font-bold cursor-pointer">＋ {t(...label)}</button>
@@ -71,51 +74,40 @@ function AdminPricingEditor({ data, reload }: { data: PriceRules; reload: () => 
           <h3 className="text-base font-serif font-bold text-[#142b4a]">{t('السعر الأساسي لكل قطعة', 'Base price per garment')}</h3>
           {p.garmentBasePrices.map((g, i) => (
             <div key={i} className="flex flex-wrap gap-2 items-center">
-              <select value={g.garment} onChange={(e) => update({ garmentBasePrices: replace(p.garmentBasePrices, i, { ...g, garment: e.target.value }) })} className={sel} aria-label={t('القطعة', 'Garment')}>
+              <Select value={g.garment} onChange={(e) => update({ garmentBasePrices: replace(p.garmentBasePrices, i, { ...g, garment: e.target.value }) })} className={sel} aria-label={t('القطعة', 'Garment')}>
                 {!garments.some((x) => x.key === g.garment) && <option value={g.garment}>{g.garment}</option>}
                 {garments.map((x) => <option key={x.key} value={x.key}>{x.nameEn || x.key}</option>)}
-              </select>
+              </Select>
               <input type="number" min={0} step="0.01" value={g.basePrice} onChange={(e) => update({ garmentBasePrices: replace(p.garmentBasePrices, i, { ...g, basePrice: Number(e.target.value) }) })} className={num} aria-label={t('السعر', 'Price')} />
               {del(() => update({ garmentBasePrices: p.garmentBasePrices.filter((_, j) => j !== i) }))}
             </div>
           ))}
-          <div className="flex gap-2 items-center">
-            {add(['قطعة', 'Garment'], () => update({ garmentBasePrices: [...p.garmentBasePrices, { garment: unpriced[0]?.key ?? '', basePrice: 0 }] }))}
-            <input placeholder={t('أو مفتاح قطعة جديدة', 'or a new garment key')} dir="ltr" className={txt}
-              onKeyDown={(e) => {
-                const key = (e.target as HTMLInputElement).value.trim();
-                if (e.key === 'Enter' && key) {
-                  e.preventDefault();
-                  update({ garmentBasePrices: [...p.garmentBasePrices, { garment: key, basePrice: 0 }] });
-                  (e.target as HTMLInputElement).value = '';
-                }
-              }} />
-          </div>
+          {add(['قطعة', 'Garment'], () => setAdding('garment'))}
         </section>
 
         <section className={box}>
           <h3 className="text-base font-serif font-bold text-[#142b4a]">{t('سعر خاص لموديل (اختياري)', 'Own price for a style (optional)')}</h3>
           {p.styleBasePrices.map((s, i) => (
             <div key={i} className="flex flex-wrap gap-2 items-center">
-              <select value={s.styleId} onChange={(e) => update({ styleBasePrices: replace(p.styleBasePrices, i, { ...s, styleId: e.target.value }) })} className={sel} aria-label={t('الموديل', 'Style')}>
+              <Select value={s.styleId} onChange={(e) => update({ styleBasePrices: replace(p.styleBasePrices, i, { ...s, styleId: e.target.value }) })} className={sel} aria-label={t('الموديل', 'Style')}>
                 {!styles.some((x) => x.id === s.styleId) && <option value={s.styleId}>{s.styleId}</option>}
                 {styles.map((x) => <option key={x.id} value={x.id}>{x.nameEn || x.id}</option>)}
-              </select>
+              </Select>
               <input type="number" min={0} step="0.01" value={s.basePrice} onChange={(e) => update({ styleBasePrices: replace(p.styleBasePrices, i, { ...s, basePrice: Number(e.target.value) }) })} className={num} aria-label={t('السعر', 'Price')} />
               {del(() => update({ styleBasePrices: p.styleBasePrices.filter((_, j) => j !== i) }))}
             </div>
           ))}
-          {add(['موديل', 'Style'], () => update({ styleBasePrices: [...p.styleBasePrices, { styleId: styles.find((x) => !p.styleBasePrices.some((y) => y.styleId === x.id))?.id ?? '', basePrice: 0 }] }))}
+          {add(['موديل', 'Style'], () => setAdding('style'))}
         </section>
 
         <section className={box}>
           <h3 className="text-base font-serif font-bold text-[#142b4a]">{t('فرق سعر القماش', 'Fabric extra')}</h3>
           {p.fabrics.map((f, i) => (
             <div key={i} className="flex flex-wrap gap-2 items-center">
-              <select value={f.fabric} onChange={(e) => update({ fabrics: replace(p.fabrics, i, { ...f, fabric: e.target.value }) })} className={sel} aria-label={t('القماش', 'Fabric')}>
+              <Select value={f.fabric} onChange={(e) => update({ fabrics: replace(p.fabrics, i, { ...f, fabric: e.target.value }) })} className={sel} aria-label={t('القماش', 'Fabric')}>
                 {!fabrics.some((x) => x.key === f.fabric) && <option value={f.fabric}>{f.fabric}</option>}
                 {fabrics.map((x) => <option key={x.key} value={x.key}>{x.nameEn || x.key}</option>)}
-              </select>
+              </Select>
               <input type="number" min={0} step="0.01" value={f.extra} onChange={(e) => update({ fabrics: replace(p.fabrics, i, { ...f, extra: Number(e.target.value) }) })} className={num} aria-label={t('الفرق', 'Extra')} />
               {del(() => update({ fabrics: p.fabrics.filter((_, j) => j !== i) }))}
             </div>
@@ -133,9 +125,9 @@ function AdminPricingEditor({ data, reload }: { data: PriceRules; reload: () => 
           {p.sizeExtras.map((s, i) => (
             <div key={i} className="flex flex-wrap gap-2 items-center">
               <span className="text-xs font-bold w-32">{t('من مقاس', 'From size')}</span>
-              <select value={s.fromSize} onChange={(e) => update({ sizeExtras: replace(p.sizeExtras, i, { ...s, fromSize: e.target.value }) })} className={sel}>
+              <Select value={s.fromSize} onChange={(e) => update({ sizeExtras: replace(p.sizeExtras, i, { ...s, fromSize: e.target.value }) })} className={sel}>
                 {adminSizes.map((x) => <option key={x}>{x}</option>)}
-              </select>
+              </Select>
               <input type="number" min={0} step="0.01" value={s.extra} onChange={(e) => update({ sizeExtras: replace(p.sizeExtras, i, { ...s, extra: Number(e.target.value) }) })} className={num} aria-label={t('الفرق', 'Extra')} />
               {del(() => update({ sizeExtras: p.sizeExtras.filter((_, j) => j !== i) }))}
             </div>
@@ -157,6 +149,21 @@ function AdminPricingEditor({ data, reload }: { data: PriceRules; reload: () => 
         ))}
         {add(['إضافة', 'Option'], () => update({ extras: [...p.extras, { key: '', nameAr: '', nameEn: '', price: 0 }] }))}
       </section>
+      <Modal open={adding !== null} title={adding === 'style' ? t('سعر خاص لموديل', 'Price for a style') : t('سعر أساسي لقطعة', 'Base price for a garment')} subtitle={t('يُحفظ مع باقي الأسعار عند الضغط على "حفظ الأسعار"', 'Saved with the other prices when you press "Save prices"')} onClose={() => setAdding(null)}>
+        {adding !== null && (
+          <AddPriceForm
+            options={adding === 'garment'
+              ? garments.filter((g) => !p.garmentBasePrices.some((x) => x.garment === g.key)).map((g) => ({ key: g.key, label: g.nameEn || g.key }))
+              : styles.filter((x) => !p.styleBasePrices.some((y) => y.styleId === x.id)).map((x) => ({ key: x.id, label: x.nameEn || x.id }))}
+            allowNewKey={adding === 'garment'}
+            onAdd={(key, price) => {
+              if (adding === 'garment') update({ garmentBasePrices: [...p.garmentBasePrices, { garment: key, basePrice: price }] });
+              else update({ styleBasePrices: [...p.styleBasePrices, { styleId: key, basePrice: price }] });
+              setAdding(null);
+            }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
@@ -175,4 +182,39 @@ export default function AdminPricing() {
   if (!data) return <div className="h-96 rounded-2xl bg-[#f7f3eb] animate-pulse" />;
   // A fresh editor for every saved/loaded copy, so it never keeps stale edits.
   return <AdminPricingEditor key={version} data={data} reload={reload} />;
+}
+
+// Pop-up: pick a garment/style without a price (or type a new garment key) and give it a price.
+function AddPriceForm({ options, allowNewKey, onAdd }: { options: { key: string; label: string }[]; allowNewKey: boolean; onAdd: (key: string, price: number) => void }) {
+  const t = useZamzamStore((state) => state.t);
+  const [key, setKey] = useState(options[0]?.key ?? '');
+  const [newKey, setNewKey] = useState('');
+  const [price, setPrice] = useState('');
+  const modal = useModalDirty(!!(newKey || price));
+  const chosen = newKey.trim() || key;
+  const badKey = newKey && !/^[A-Za-z0-9_-]+$/.test(newKey.trim());
+  const valid = !!chosen && !badKey && price !== '' && Number(price) >= 0;
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); if (valid) onAdd(chosen, Number(price)); }} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label={t('اختاري', 'Choose')} hint={options.length === 0 ? t('كل العناصر لها سعر بالفعل', 'Everything already has a price') : undefined}>
+        <Select value={key} disabled={!!newKey || options.length === 0} onChange={(e) => setKey(e.target.value)} className={ui.input}>
+          {options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </Select>
+      </Field>
+      <Field label={`${t('السعر', 'Price')} *`}>
+        <input type="number" min={0} step="0.01" required autoFocus value={price} onChange={(e) => setPrice(e.target.value)} className={ui.input} dir="ltr" />
+      </Field>
+      {allowNewKey && (
+        <Field label={t('أو مفتاح قطعة جديدة (اختياري)', 'Or a new garment key (optional)')} hint={t('بالإنجليزية بدون مسافات، مثل wide_pants', 'English, no spaces, e.g. wide_pants')}
+          error={badKey ? t('حروف إنجليزية وأرقام و _ - فقط', 'English letters, digits, _ and - only') : undefined} className="sm:col-span-2">
+          <input dir="ltr" maxLength={50} value={newKey} onChange={(e) => setNewKey(e.target.value)} className={ui.input} />
+        </Field>
+      )}
+      <div className="sm:col-span-2 flex justify-end gap-2 pt-2 border-t border-[#efe9df]">
+        <Button variant="secondary" onClick={() => modal?.requestClose()}>{t('إلغاء', 'Cancel')}</Button>
+        <Button type="submit" disabled={!valid}>{t('إضافة', 'Add')}</Button>
+      </div>
+    </form>
+  );
 }

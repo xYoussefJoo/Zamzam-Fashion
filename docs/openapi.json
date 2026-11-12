@@ -58,7 +58,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -112,7 +112,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -356,6 +356,45 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlacedOrderDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/lookup": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupOrderCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupOrderCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupOrderCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicOrderDto"
                 }
               }
             }
@@ -755,7 +794,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -794,6 +833,28 @@
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "colorId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -967,7 +1028,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1089,6 +1150,163 @@
         }
       }
     },
+    "/api/admin/inventory": {
+      "get": {
+        "tags": [
+          "AdminVariants"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "colorId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/variants/{id}/stock": {
+      "post": {
+        "tags": [
+          "AdminVariants"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustStockCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustStockCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustStockCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVariantDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/variants/{id}/movements": {
+      "get": {
+        "tags": [
+          "AdminVariants"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockMovementDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/variants/{id}": {
       "put": {
         "tags": [
@@ -1157,7 +1375,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1183,7 +1401,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1316,7 +1534,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1790,6 +2008,34 @@
   },
   "components": {
     "schemas": {
+      "AdjustStockCommand": {
+        "required": [
+          "change",
+          "reason",
+          "note",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "change": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/StockReason"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        }
+      },
       "AdminCategoryNode": {
         "required": [
           "id",
@@ -2194,7 +2440,8 @@
           "variantCount",
           "isVisible",
           "thumbnailUrl",
-          "lowStock"
+          "lowStock",
+          "lowVariants"
         ],
         "type": "object",
         "properties": {
@@ -2244,6 +2491,10 @@
           },
           "lowStock": {
             "type": "boolean"
+          },
+          "lowVariants": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -3098,6 +3349,108 @@
           }
         }
       },
+      "InventoryDto": {
+        "required": [
+          "rows",
+          "variants",
+          "units",
+          "low",
+          "soldOut",
+          "lowStockAtOrBelow",
+          "sizes"
+        ],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "$ref": "#/components/schemas/PagedOfInventoryRow"
+          },
+          "variants": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "units": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "low": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "soldOut": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lowStockAtOrBelow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sizes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "InventoryRow": {
+        "required": [
+          "variantId",
+          "productId",
+          "productNameAr",
+          "productNameEn",
+          "productVisible",
+          "sku",
+          "size",
+          "color",
+          "stock",
+          "priceOverride",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productNameAr": {
+            "type": "string"
+          },
+          "productNameEn": {
+            "type": "string"
+          },
+          "productVisible": {
+            "type": "boolean"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string"
+          },
+          "color": {
+            "$ref": "#/components/schemas/ColorDto"
+          },
+          "stock": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "priceOverride": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        }
+      },
       "LoginRequest": {
         "required": [
           "email",
@@ -3114,6 +3467,21 @@
           "rememberMe": {
             "type": "boolean",
             "default": false
+          }
+        }
+      },
+      "LookupOrderCommand": {
+        "required": [
+          "number",
+          "contact"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string"
+          },
+          "contact": {
+            "type": "string"
           }
         }
       },
@@ -3176,8 +3544,7 @@
       "NewVariant": {
         "required": [
           "size",
-          "colorId",
-          "stock"
+          "colorId"
         ],
         "type": "object",
         "properties": {
@@ -3185,10 +3552,6 @@
             "type": "string"
           },
           "colorId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "stock": {
             "type": "integer",
             "format": "int32"
           },
@@ -3330,6 +3693,40 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AdminProductRow"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedOfInventoryRow": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryRow"
             }
           },
           "page": {
@@ -4171,6 +4568,52 @@
           }
         }
       },
+      "StockMovementDto": {
+        "required": [
+          "id",
+          "change",
+          "reason",
+          "note",
+          "createdAt",
+          "createdBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "change": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/StockReason"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string"
+          }
+        }
+      },
+      "StockReason": {
+        "enum": [
+          "Received",
+          "Sold",
+          "Returned",
+          "Damaged",
+          "Correction"
+        ]
+      },
       "StylePrice": {
         "required": [
           "styleId",
@@ -4354,7 +4797,6 @@
         "required": [
           "size",
           "colorId",
-          "stock",
           "priceOverride",
           "version"
         ],
@@ -4364,10 +4806,6 @@
             "type": "string"
           },
           "colorId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "stock": {
             "type": "integer",
             "format": "int32"
           },

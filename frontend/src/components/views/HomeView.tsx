@@ -110,7 +110,7 @@ export default function HomeView() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#142b4a]/45 via-transparent to-transparent pointer-events-none" />
 
           {/* Floating glass badge */}
-          <span className="absolute bottom-6 end-6 bg-white/85 backdrop-blur-md px-4 py-2 text-[10px] sm:text-xs tracking-widest font-bold text-[#142b4a] rounded-full shadow-sm">
+          <span className="absolute bottom-6 end-6 bg-white/85 backdrop-blur-md px-4 py-2 text-[14px] sm:text-xs tracking-widest font-bold text-[#142b4a] rounded-full shadow-sm">
             THE EVERYDAY COLLECTION — 2026
           </span>
 
@@ -290,7 +290,7 @@ export default function HomeView() {
             <h2 className="text-2xl sm:text-4xl font-serif font-bold text-[#142b4a] leading-tight">
               {t('تفصيل على مقاسك، بذوقك.', 'Your vision. Our craftsmanship.')}
             </h2>
-            <p className="text-sm text-[#524430] leading-relaxed">
+            <p className="text-base sm:text-lg text-[#524430] leading-relaxed">
               {t(
                 'ارفعي صورة الموديل، اختاري القماش واللون، وحددي مقاساتك بدقة لنصنع لكِ قطعة استثنائية تناسبك تماماً.',
                 'Share your design inspiration, select your favored fabric and color, and provide your measurements for a bespoke creation.'

@@ -143,7 +143,7 @@ function Details({ product }: { product: ProductDetail }) {
     <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-12 animate-scale-in">
       {/* Breadcrumbs & Navigation */}
       <nav aria-label="Breadcrumb" className="flex items-center justify-between gap-4 pb-4 border-b border-[#e8dfd1] text-xs">
-        <div className="flex items-center gap-2 text-[#77808b] flex-wrap">
+        <div className="flex items-center gap-2 text-[#666f7a] flex-wrap">
           <button type="button" onClick={() => go('home')} className="hover:text-[#b99664] transition-colors cursor-pointer">
             {t('الرئيسية', 'Home')}
           </button>
@@ -209,7 +209,7 @@ function Details({ product }: { product: ProductDetail }) {
                 {categoryName}
               </span>
               {variant?.inStock && variant.stock != null && variant.stock <= 3 && (
-                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#b99664] text-white shadow-xs">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#b99664] text-white shadow-xs">
                   {t('آخر قطع متوفرة', 'Few pieces left')}
                 </span>
               )}
@@ -409,7 +409,7 @@ function Details({ product }: { product: ProductDetail }) {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-[#e8dfd1] text-[11px] text-[#142b4a] font-bold">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-[#e8dfd1] text-xs text-[#142b4a] font-bold">
             <div className="flex items-center gap-2 bg-[#fbf8f3] p-2.5 rounded-xl">
               <span>{t('شحن لجميع المحافظات', 'Fast Egypt delivery')}</span>
             </div>
