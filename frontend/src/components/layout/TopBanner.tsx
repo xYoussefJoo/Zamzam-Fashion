@@ -16,7 +16,7 @@ export default function TopBanner() {
   return (
     <aside
       aria-label="Announcement"
-      className="bg-[#142b4a] text-white text-[11px] sm:text-xs py-2 px-4 text-center font-medium tracking-wide flex items-center justify-center gap-2 border-b border-[#0f2138]"
+      className="bg-[#142b4a] text-white text-xs sm:text-xs py-2 px-4 text-center font-medium tracking-wide flex items-center justify-center gap-2 border-b border-[#0f2138]"
     >
       <span className="text-[#b99664] text-xs">✦</span>
       <span className="opacity-95">{text}</span>

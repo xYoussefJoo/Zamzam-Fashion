@@ -9,6 +9,7 @@ import type { AdminTab } from '@/types/zamzam';
 import AdminOverview from './AdminOverview';
 import AdminCategories from './AdminCategories';
 import AdminProducts from './AdminProducts';
+import AdminInventory from './AdminInventory';
 import AdminProductEditor from './AdminProductEditor';
 import AdminOrders from './AdminOrders';
 import AdminSettings from './AdminSettings';
@@ -57,7 +58,7 @@ export default function AdminView() {
   };
 
   const groups: [string, string, AdminTab[]][] = [
-    ['إدارة المتجر', 'STORE', ['overview', 'orders', 'products', 'categories', 'colors']],
+    ['إدارة المتجر', 'STORE', ['overview', 'orders', 'products', 'warehouse', 'categories', 'colors']],
     ['التفصيل', 'TAILORING', ['tailoring', 'pricing']],
     ['الإعدادات', 'SETTINGS', ['zones', 'settings', 'password']],
   ];
@@ -72,13 +73,13 @@ export default function AdminView() {
             <img src={assetPath('assets/logo-mark-160.webp')} alt="Zamzam Fashion" className="w-12 h-12 object-contain" />
             <div>
               <strong className="block text-sm font-serif font-bold text-white">Zamzam Fashion</strong>
-              <small className="text-[9px] tracking-wider text-[#d9c5a4] uppercase font-semibold">STORE MANAGEMENT</small>
+              <small className="text-[14px] tracking-wider text-[#d9c5a4] uppercase font-semibold">STORE MANAGEMENT</small>
             </div>
           </div>
 
           {groups.map(([ar, en, keys]) => (
             <div key={en} className="space-y-1">
-              <div className="text-[10px] tracking-widest uppercase font-bold text-[#c1c9d1] px-3 pb-1">{t(ar, en)}</div>
+              <div className="text-[14px] tracking-widest uppercase font-bold text-[#c1c9d1] px-3 pb-1">{t(ar, en)}</div>
               {keys.map((key) => {
                 const isActive = tab === key;
                 return (
@@ -101,7 +102,7 @@ export default function AdminView() {
         </div>
 
         <div className="pt-6 border-t border-white/15 space-y-2 mt-8 md:mt-0">
-          <p className="px-2 text-[11px] text-[#c1c9d1] truncate" title={user.email}>{user.fullName || user.email}</p>
+          <p className="px-2 text-xs text-[#c1c9d1] truncate" title={user.email}>{user.fullName || user.email}</p>
           <button type="button" className="w-full text-start text-xs text-[#d7dfe7] hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer" onClick={() => go('home')}>
             ↗ {t('عرض المتجر', 'View storefront')}
           </button>
@@ -140,6 +141,7 @@ export default function AdminView() {
         {tab === 'overview' && <AdminOverview />}
         {tab === 'categories' && <AdminCategories />}
         {tab === 'products' && <AdminProducts />}
+        {tab === 'warehouse' && <AdminInventory />}
         {tab === 'orders' && <AdminOrders />}
         {tab === 'colors' && <AdminColors />}
         {tab === 'zones' && <AdminZones />}

@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Zamzam type scale: one place for every text size in the shop and the dashboard.
+   Nothing below 14px; Arabic needs a little more size than Latin to stay readable. */
+@theme {
+  --text-xs: 0.9375rem;      /* 15px  small notes, badges, hints */
+  --text-xs--line-height: 1.55;
+  --text-sm: 1.0625rem;      /* 17px  body text, inputs, buttons, table cells */
+  --text-sm--line-height: 1.6;
+  --text-base: 1.125rem;     /* 18px */
+  --text-lg: 1.3125rem;      /* 21px  card titles */
+  --text-xl: 1.5rem;         /* 24px  section titles */
+  --text-2xl: 1.75rem;       /* 28px  page titles */
+}
+
 :root {
   --cream: #f7f3eb;
   --beige: #e7dac5;

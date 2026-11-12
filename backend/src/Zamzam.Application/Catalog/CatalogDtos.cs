@@ -34,7 +34,7 @@ public sealed record AdminCategoryNode(int Id, int? ParentId, string Slug, strin
 
 public sealed record AdminProductRow(int Id, string Slug, string NameAr, string NameEn, int CategoryId,
     string CategoryNameAr, string CategoryNameEn, decimal BasePrice, int TotalStock, int VariantCount,
-    bool IsVisible, string? ThumbnailUrl, bool LowStock);
+    bool IsVisible, string? ThumbnailUrl, bool LowStock, int LowVariants); // LowVariants: low or sold-out variants
 
 public sealed record AdminVariantDto(int Id, string Sku, string Size, ColorDto Color, int Stock,
     decimal? PriceOverride, decimal Price, uint Version);

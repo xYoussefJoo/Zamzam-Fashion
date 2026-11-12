@@ -7,6 +7,7 @@ import { ApiError, errorText, fieldError } from '@/lib/api';
 import { createCategory, deleteCategory, getAdminCategories, updateCategory, type AdminCategory } from '@/lib/admin';
 import { pick } from '@/lib/shop';
 import { Button, EmptyState, Field, LoadError, Modal, PageHeader, Skeleton, ui, useConfirm, useModalDirty } from '@/components/admin/ui';
+import Select from '@/components/ui/Select';
 
 // #17–#20 — two levels: main category → sub-category. Add and Edit open a pop-up.
 export default function AdminCategories() {
@@ -71,7 +72,7 @@ export default function AdminCategories() {
       ) : (
         <section className={`${ui.card} p-4 sm:p-5 grid gap-2.5`}>
           {all.map((c) => (
-            <div key={c.id} className={`border border-[#eae6df] rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#fcfaf7] transition-colors ${c.parentId ? 'sm:ms-8' : ''}`}>
+            <div key={c.id} className={`border border-[#eae6df] rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#fcfaf7] transition-colors ${c.parentId ? 'border-s-4 border-s-[#d9c5a4] bg-[#fdfbf8]' : ''}`}>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-11 h-11 rounded-xl bg-[#f1ece4] overflow-hidden shrink-0 flex items-center justify-center">
                   {c.imageUrl ? (
@@ -81,11 +82,13 @@ export default function AdminCategories() {
                 </div>
                 <div className="min-w-0">
                   <b className="block text-sm font-bold text-[#142b4a] truncate">
-                    {c.parentId ? '↳ ' : ''}{pick(lang, c.nameAr, c.nameEn)}
-                    {!c.isVisible && <span className="ms-2 text-[10px] px-2 py-0.5 rounded-full bg-[#f1ece4] text-[#77808a] align-middle">{t('مخفي', 'Hidden')}</span>}
+                    {pick(lang, c.nameAr, c.nameEn)}
+                    {!c.isVisible && <span className="ms-2 text-[14px] px-2 py-0.5 rounded-full bg-[#f1ece4] text-[#77808a] align-middle">{t('مخفي', 'Hidden')}</span>}
                   </b>
                   <small className="block text-xs text-[#858b91] mt-0.5">
-                    {c.parentId ? t('قسم فرعي', 'Subcategory') : t('قسم رئيسي', 'Main category')} · {c.productCount} {t('منتج', 'products')} · <span dir="ltr">{c.slug}</span>
+                    {c.parentId
+                      ? <span className="inline-block px-2 py-0.5 rounded-full bg-[#f3eadb] text-[#8a6d43] font-bold">{t('قسم فرعي من', 'Sub-category of')} {pick(lang, all.find((x) => x.id === c.parentId)?.nameAr ?? '', all.find((x) => x.id === c.parentId)?.nameEn ?? '')}</span>
+                      : t('قسم رئيسي', 'Main category')} · {c.productCount} {t('منتج', 'products')} · <span dir="ltr">{c.slug}</span>
                   </small>
                 </div>
               </div>
@@ -157,10 +160,10 @@ function CategoryForm({ category, parents, onSaved }: { category: AdminCategory 
         <input required maxLength={100} dir="ltr" placeholder="Linen Pants" value={f.nameEn} onChange={(e) => setF({ ...f, nameEn: e.target.value })} className={ui.input} />
       </Field>
       <Field label={t('تابع لقسم', 'Parent category')}>
-        <select value={f.parentId} onChange={(e) => setF({ ...f, parentId: e.target.value })} className={ui.input}>
+        <Select value={f.parentId} onChange={(e) => setF({ ...f, parentId: e.target.value })} className={ui.input}>
           <option value="">{t('قسم رئيسي مستقل', 'Independent main category')}</option>
           {parents.map((c) => <option key={c.id} value={c.id}>{pick(lang, c.nameAr, c.nameEn)}</option>)}
-        </select>
+        </Select>
       </Field>
       <Field label={t('الرابط المختصر (اختياري)', 'Link name (optional)')} hint={t('يُنشأ تلقائيًا من الاسم الإنجليزي', 'Made from the English name if empty')} error={fieldError(error, 'slug')}>
         <input dir="ltr" maxLength={100} placeholder="linen-pants" value={f.slug} onChange={(e) => setF({ ...f, slug: e.target.value })} className={ui.input} />

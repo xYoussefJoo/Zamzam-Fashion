@@ -5,6 +5,7 @@ import { useZamzamStore } from '@/store/useZamzamStore';
 import { useApi } from '@/lib/useApi';
 import { ApiError, errorText, fieldError } from '@/lib/api';
 import { getDeliveryZones, newKey, pick, placeOrder, rememberOrder } from '@/lib/shop';
+import Select from '@/components/ui/Select';
 
 type Shortage = { variantId: number; requested: number; available: number };
 
@@ -114,7 +115,7 @@ export default function CartView() {
     'border border-[#e8e3d9] rounded-xl p-3 bg-white text-[#142b4a] text-sm focus:outline-none focus:ring-2 focus:ring-[#b99664] focus:border-[#b99664] transition-all';
   const fieldMsg = (name: string) => {
     const msg = fieldError(error, name);
-    return msg ? <small className="text-[11px] font-semibold text-[#a72f3e]">{msg}</small> : null;
+    return msg ? <small className="text-xs font-semibold text-[#a72f3e]">{msg}</small> : null;
   };
 
   return (
@@ -223,7 +224,7 @@ export default function CartView() {
 
                 <label className="flex flex-col gap-1.5 text-xs sm:text-sm font-bold text-[#2d3540]">
                   <span>{t('المحافظة', 'Governorate')} *</span>
-                  <select name="zone" required value={zoneId} onChange={(e) => setZoneId(e.target.value ? Number(e.target.value) : '')}
+                  <Select name="zone" required value={zoneId} onChange={(e) => setZoneId(e.target.value ? Number(e.target.value) : '')}
                     className={`${inputClasses} cursor-pointer`} disabled={zones.loading && !zones.data}>
                     <option value="">{zones.error ? t('تعذر تحميل المحافظات', "Couldn't load governorates") : t('اختاري المحافظة', 'Choose governorate')}</option>
                     {zones.data?.map((z) => (
@@ -231,14 +232,14 @@ export default function CartView() {
                         {pick(lang, z.nameAr, z.nameEn)} — {money(z.fee)}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   {zone && (
-                    <small className="text-[11px] font-semibold text-[#77808b]">
+                    <small className="text-xs font-semibold text-[#77808b]">
                       {t(`التوصيل خلال ${zone.etaDaysMin}–${zone.etaDaysMax} أيام`, `Delivery in ${zone.etaDaysMin}–${zone.etaDaysMax} days`)}
                     </small>
                   )}
                   {zones.error ? (
-                    <button type="button" onClick={zones.reload} className="text-[11px] font-bold text-[#b99664] text-start cursor-pointer">
+                    <button type="button" onClick={zones.reload} className="text-xs font-bold text-[#b99664] text-start cursor-pointer">
                       {t('إعادة المحاولة', 'Try again')}
                     </button>
                   ) : null}
@@ -262,7 +263,7 @@ export default function CartView() {
                   <span>{t('البريد الإلكتروني (اختياري)', 'Email (optional)')}</span>
                   <input name="email" type="email" maxLength={254} autoComplete="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)}
                     className={inputClasses} placeholder="name@example.com" />
-                  <small className="text-[11px] font-medium text-[#77808b]">
+                  <small className="text-xs font-medium text-[#77808b]">
                     {t('نرسل لكِ رابط تتبع الطلب عليه', "We'll email you the tracking link")}
                   </small>
                   {fieldMsg('customer.email')}

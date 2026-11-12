@@ -34,6 +34,7 @@ public class ZamzamDbContext(DbContextOptions<ZamzamDbContext> options, TimeProv
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
     public DbSet<Color> Colors => Set<Color>();
 
@@ -69,6 +70,7 @@ public class ZamzamDbContext(DbContextOptions<ZamzamDbContext> options, TimeProv
         configurationBuilder.Properties<PaymentMethod>().HaveConversion<string>().HaveMaxLength(30);
         configurationBuilder.Properties<PaymentStatus>().HaveConversion<string>().HaveMaxLength(20);
         configurationBuilder.Properties<SizingMode>().HaveConversion<string>().HaveMaxLength(20);
+        configurationBuilder.Properties<StockReason>().HaveConversion<string>().HaveMaxLength(20);
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

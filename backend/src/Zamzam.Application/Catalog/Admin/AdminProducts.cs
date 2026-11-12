@@ -14,11 +14,15 @@ public sealed record AdminProductsQuery(
     string? Q = null,
     bool? IsVisible = null,
     bool? LowStock = null,
+    int? ColorId = null,       // these three match on the same variant (AND):
+    string? Size = null,       // e.g. "has an M in Navy that is low"
+    string? Status = null,     // all | low | out | in (see InventoryStatus)
     string? Sort = null,
     int? Page = null,
     int? PageSize = null);
 
-public sealed record NewVariant(string Size, int ColorId, int Stock, decimal? PriceOverride = null, string? Sku = null);
+// New variants start at 0: stock is added in the Warehouse (with a reason), never here.
+public sealed record NewVariant(string Size, int ColorId, decimal? PriceOverride = null, string? Sku = null);
 
 public sealed record CreateProductCommand(
     int CategoryId,
@@ -48,6 +52,10 @@ public sealed class AdminProductsQueryValidator : AbstractValidator<AdminProduct
     public AdminProductsQueryValidator()
     {
         RuleFor(q => q.Q).MaximumLength(100);
+        RuleFor(q => q.Size).MaximumLength(20);
+        RuleFor(q => q.ColorId).GreaterThan(0).When(q => q.ColorId is not null);
+        RuleFor(q => q.Status).Must(s => s is null or InventoryStatus.All or InventoryStatus.Low or InventoryStatus.SoldOut or InventoryStatus.InStock)
+            .WithMessage("status must be all, low, out or in.");
         RuleFor(q => q.Sort).Must(s => s is "newest" or "name" or "price_asc" or "price_desc" or "stock_asc")
             .When(q => q.Sort is not null).WithMessage("Sort must be newest, name, price_asc, price_desc or stock_asc.");
     }
@@ -59,7 +67,6 @@ public sealed class NewVariantValidator : AbstractValidator<NewVariant>
     {
         RuleFor(v => v.Size).NotEmpty().MaximumLength(20);
         RuleFor(v => v.ColorId).GreaterThan(0);
-        RuleFor(v => v.Stock).InclusiveBetween(0, 100_000);
         RuleFor(v => v.PriceOverride).GreaterThan(0).PrecisionScale(18, 2, true).When(v => v.PriceOverride is not null);
         RuleFor(v => v.Sku).MaximumLength(64).Matches("^[A-Za-z0-9-]+$").When(v => !string.IsNullOrWhiteSpace(v.Sku))
             .WithMessage("SKU may only contain letters, digits and dashes.");
@@ -112,6 +119,20 @@ public sealed class ListAdminProductsHandler(IAppDbContext db, IImageStorage sto
             products = products.Where(p => p.IsVisible == visible);
         if (query.LowStock == true)
             products = products.Where(p => p.Variants.Any(v => !v.IsDeleted && v.Stock <= CatalogRules.LowStockAtOrBelow));
+        var colorId = query.ColorId;
+        var size = string.IsNullOrWhiteSpace(query.Size) ? null : query.Size.Trim();
+        var status = query.Status is InventoryStatus.Low or InventoryStatus.SoldOut or InventoryStatus.InStock ? query.Status : null;
+        if (colorId is not null || size is not null || status is not null)
+        {
+            const int low = CatalogRules.LowStockAtOrBelow;
+            products = products.Where(p => p.Variants.Any(v => !v.IsDeleted
+                && (colorId == null || v.ColorId == colorId)
+                && (size == null || v.Size == size)
+                && (status == null
+                    || (status == InventoryStatus.Low && v.Stock > 0 && v.Stock <= low)
+                    || (status == InventoryStatus.SoldOut && v.Stock <= 0)
+                    || (status == InventoryStatus.InStock && v.Stock > low))));
+        }
         if (!string.IsNullOrWhiteSpace(query.Q))
         {
             var text = query.Q.Trim();
@@ -128,6 +149,7 @@ public sealed class ListAdminProductsHandler(IAppDbContext db, IImageStorage sto
             TotalStock = p.Variants.Where(v => !v.IsDeleted).Sum(v => (int?)v.Stock) ?? 0,
             VariantCount = p.Variants.Count(v => !v.IsDeleted),
             LowStock = p.Variants.Any(v => !v.IsDeleted && v.Stock <= CatalogRules.LowStockAtOrBelow),
+            LowVariants = p.Variants.Count(v => !v.IsDeleted && v.Stock <= CatalogRules.LowStockAtOrBelow),
         });
 
         rows = query.Sort switch
@@ -150,7 +172,7 @@ public sealed class ListAdminProductsHandler(IAppDbContext db, IImageStorage sto
         var items = pageRows.Select(r => new AdminProductRow(r.Id, r.Slug, r.NameAr, r.NameEn, r.CategoryId,
             r.CategoryNameAr, r.CategoryNameEn, r.BasePrice, r.TotalStock, r.VariantCount, r.IsVisible,
             thumbs.TryGetValue(r.Id, out var key) ? storage.PublicUrl(ImageKeys.ForWidth(key, ImageSizes.Thumbnail)) : null,
-            r.LowStock)).ToList();
+            r.LowStock, r.LowVariants)).ToList();
 
         return Paging.Create(items, page, pageSize, total);
     }
@@ -190,7 +212,7 @@ public sealed class CreateProductHandler(IAppDbContext db, IImageStorage storage
             foreach (var v in command.Variants ?? [])
             {
                 var sku = await ProductLookup.ResolveSkuAsync(db, v.Sku, product.Id, v.Size, colors[v.ColorId], token);
-                product.AddVariant(v.Size, v.ColorId, sku, v.Stock, v.PriceOverride);
+                product.AddVariant(v.Size, v.ColorId, sku, 0, v.PriceOverride);
             }
             await db.SaveChangesAsync(token);
             return product.Id;
@@ -233,12 +255,9 @@ public sealed class DeleteProductHandler(IAppDbContext db, IImageStorage storage
         var variantIds = product.Variants.Select(v => v.Id).ToList();
         var wasOrdered = await db.OrderLines.AnyAsync(l => variantIds.Contains(l.VariantId), ct);
 
+        // Old orders point at this product, so it can't go. Hiding it (isVisible = false) is the way out of the shop.
         if (wasOrdered)
-        {
-            product.SoftDelete(); // hidden from the shop, kept for old orders (photos kept too)
-            await db.SaveChangesAsync(ct);
-            return;
-        }
+            throw new DomainException(ErrorCodes.HasOrders, "This product has orders and can't be deleted. Hide it instead.");
 
         var files = product.Images.SelectMany(i => ImageKeys.AllFiles(i.StorageKey)).ToList();
         db.Products.Remove(product);
@@ -249,7 +268,8 @@ public sealed class DeleteProductHandler(IAppDbContext db, IImageStorage storage
 
 // ===================== variants: #26–28 =====================
 
-public sealed record UpdateVariantCommand(string Size, int ColorId, int Stock, decimal? PriceOverride, uint Version);
+// Size, colour and price only; stock is changed in the Warehouse (AdjustStockCommand).
+public sealed record UpdateVariantCommand(string Size, int ColorId, decimal? PriceOverride, uint Version);
 
 public sealed class UpdateVariantValidator : AbstractValidator<UpdateVariantCommand>
 {
@@ -257,7 +277,6 @@ public sealed class UpdateVariantValidator : AbstractValidator<UpdateVariantComm
     {
         RuleFor(v => v.Size).NotEmpty().MaximumLength(20);
         RuleFor(v => v.ColorId).GreaterThan(0);
-        RuleFor(v => v.Stock).InclusiveBetween(0, 100_000);
         RuleFor(v => v.PriceOverride).GreaterThan(0).PrecisionScale(18, 2, true).When(v => v.PriceOverride is not null);
     }
 }
@@ -277,7 +296,7 @@ public sealed class AddVariantHandler(IAppDbContext db)
             throw new DomainException(ErrorCodes.Duplicate, $"This product already has size {command.Size.Trim()} in {color.NameEn}.");
 
         var sku = await ProductLookup.ResolveSkuAsync(db, command.Sku, product.Id, command.Size, color, ct);
-        var variant = product.AddVariant(command.Size, command.ColorId, sku, command.Stock, command.PriceOverride);
+        var variant = product.AddVariant(command.Size, command.ColorId, sku, 0, command.PriceOverride);
         await db.SaveChangesAsync(ct);
 
         return ProductLookup.ToVariantDto(variant, color, product.BasePrice);
@@ -294,7 +313,7 @@ public sealed class UpdateVariantHandler(IAppDbContext db)
 
         // Optimistic concurrency: the save only succeeds if the row still has the version the admin saw.
         db.Entry(variant).Property(v => v.Version).OriginalValue = command.Version;
-        product.UpdateVariant(id, command.Size, command.ColorId, command.Stock, command.PriceOverride);
+        product.UpdateVariant(id, command.Size, command.ColorId, variant.Stock, command.PriceOverride);
         await db.SaveChangesAsync(ct);
 
         return ProductLookup.ToVariantDto(variant, color, product.BasePrice);

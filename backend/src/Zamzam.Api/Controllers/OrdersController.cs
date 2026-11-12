@@ -31,6 +31,12 @@ public sealed class OrdersController : ApiControllerBase
         return Created($"/api/orders/{placed.Number}", placed);
     }
 
+    // Track without the link: order number + the phone or email used at checkout.
+    [HttpPost("orders/lookup")]
+    [EnableRateLimiting(RateLimitPolicies.Tracking)]
+    public Task<PublicOrderDto> Lookup(LookupOrderCommand command, [FromServices] LookupOrderHandler handler, CancellationToken ct) =>
+        handler.HandleAsync(command, ct);
+
     // #11 — the token goes in a header, never in the URL, so it doesn't end up in server logs
     [HttpGet("orders/{number}")]
     [EnableRateLimiting(RateLimitPolicies.Tracking)]

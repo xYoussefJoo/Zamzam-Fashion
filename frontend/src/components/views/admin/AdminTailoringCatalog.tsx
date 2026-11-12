@@ -7,6 +7,7 @@ import { ApiError, errorText } from '@/lib/api';
 import { getAdminTailoringCatalog, saveTailoringCatalog, type TailoringCatalogContent } from '@/lib/admin';
 
 import { Button, Field as FormField, Modal, ui, useModalDirty } from '@/components/admin/ui';
+import Select from '@/components/ui/Select';
 
 type Field = { key: string; nameAr: string; nameEn: string; required?: boolean };
 type Groups = Record<string, Field[]>;
@@ -50,7 +51,7 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
     </div>
   );
   const remove = (onRemove: () => void) => (
-    <button type="button" onClick={onRemove} aria-label={t('حذف', 'Remove')} className="px-2 py-1 rounded-lg border border-[#efc9c9] bg-[#fff7f7] text-[#a34c4c] text-[11px] font-bold cursor-pointer">✕</button>
+    <button type="button" onClick={onRemove} aria-label={t('حذف', 'Remove')} className="px-2 py-1 rounded-lg border border-[#efc9c9] bg-[#fff7f7] text-[#a34c4c] text-xs font-bold cursor-pointer">✕</button>
   );
   const replace = <T,>(list: T[], i: number, item: T) => list.map((x, j) => (j === i ? item : x));
 
@@ -73,7 +74,7 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
             <input value={g.nameEn} dir="ltr" placeholder="English" onChange={(e) => update({ garments: replace(c.garments, i, { ...g, nameEn: e.target.value }) })} className={input} />
             <input value={g.measurementGroups.join(', ')} dir="ltr" placeholder="common, sleeves, dress" title={t('مجموعات المقاسات مفصولة بفاصلة', 'Measurement groups, comma separated')}
               onChange={(e) => update({ garments: replace(c.garments, i, { ...g, measurementGroups: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) }) })} className={input} />
-            <label className="flex items-center gap-1 text-[11px] font-bold"><input type="checkbox" checked={g.isActive} onChange={(e) => update({ garments: replace(c.garments, i, { ...g, isActive: e.target.checked }) })} className="accent-[#142b4a]" />{t('مفعل', 'Active')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold"><input type="checkbox" checked={g.isActive} onChange={(e) => update({ garments: replace(c.garments, i, { ...g, isActive: e.target.checked }) })} className="accent-[#142b4a]" />{t('مفعل', 'Active')}</label>
             {remove(() => update({ garments: c.garments.filter((_, j) => j !== i) }))}
           </div>
         ))}
@@ -84,19 +85,19 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
         {c.styles.map((s, i) => (
           <div key={i} className="grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1.3fr_auto_auto] gap-2 items-center">
             <input value={s.id} dir="ltr" placeholder="id" onChange={(e) => update({ styles: replace(c.styles, i, { ...s, id: e.target.value.trim() }) })} className={input} aria-label="id" />
-            <select value={s.garment} onChange={(e) => update({ styles: replace(c.styles, i, { ...s, garment: e.target.value }) })} className={input} aria-label={t('القطعة', 'Garment')}>
+            <Select value={s.garment} onChange={(e) => update({ styles: replace(c.styles, i, { ...s, garment: e.target.value }) })} className={input} aria-label={t('القطعة', 'Garment')}>
               {c.garments.map((g) => <option key={g.key} value={g.key}>{g.nameEn || g.key}</option>)}
-            </select>
+            </Select>
             <input value={s.nameAr} placeholder={t('بالعربي', 'Arabic')} onChange={(e) => update({ styles: replace(c.styles, i, { ...s, nameAr: e.target.value }) })} className={input} />
             <input value={s.nameEn} dir="ltr" placeholder="English" onChange={(e) => update({ styles: replace(c.styles, i, { ...s, nameEn: e.target.value }) })} className={input} />
-            <select value={s.defaultFabric} onChange={(e) => update({ styles: replace(c.styles, i, { ...s, defaultFabric: e.target.value }) })} className={input} aria-label={t('القماش', 'Fabric')}>
+            <Select value={s.defaultFabric} onChange={(e) => update({ styles: replace(c.styles, i, { ...s, defaultFabric: e.target.value }) })} className={input} aria-label={t('القماش', 'Fabric')}>
               {c.fabrics.map((f) => <option key={f.key} value={f.key}>{f.nameEn || f.key}</option>)}
-            </select>
-            <select value={s.defaultFit} onChange={(e) => update({ styles: replace(c.styles, i, { ...s, defaultFit: e.target.value }) })} className={input} aria-label={t('القصّة', 'Fit')}>
+            </Select>
+            <Select value={s.defaultFit} onChange={(e) => update({ styles: replace(c.styles, i, { ...s, defaultFit: e.target.value }) })} className={input} aria-label={t('القصّة', 'Fit')}>
               {c.fits.map((f) => <option key={f.key} value={f.key}>{f.nameEn || f.key}</option>)}
-            </select>
+            </Select>
             <input value={s.imageUrl ?? ''} dir="ltr" type="url" placeholder="https://… (image)" onChange={(e) => update({ styles: replace(c.styles, i, { ...s, imageUrl: e.target.value || null }) })} className={input} />
-            <label className="flex items-center gap-1 text-[11px] font-bold"><input type="checkbox" checked={s.isActive} onChange={(e) => update({ styles: replace(c.styles, i, { ...s, isActive: e.target.checked }) })} className="accent-[#142b4a]" />{t('مفعل', 'Active')}</label>
+            <label className="flex items-center gap-1 text-xs font-bold"><input type="checkbox" checked={s.isActive} onChange={(e) => update({ styles: replace(c.styles, i, { ...s, isActive: e.target.checked }) })} className="accent-[#142b4a]" />{t('مفعل', 'Active')}</label>
             {remove(() => update({ styles: c.styles.filter((_, j) => j !== i) }))}
           </div>
         ))}
@@ -111,7 +112,7 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
                 <input value={f.key} dir="ltr" placeholder="key" onChange={(e) => update({ [kind]: replace(c[kind], i, { ...f, key: e.target.value.trim() }) })} className={input} aria-label="key" />
                 <input value={f.nameAr} placeholder={t('بالعربي', 'Arabic')} onChange={(e) => update({ [kind]: replace(c[kind], i, { ...f, nameAr: e.target.value }) })} className={input} />
                 <input value={f.nameEn} dir="ltr" placeholder="English" onChange={(e) => update({ [kind]: replace(c[kind], i, { ...f, nameEn: e.target.value }) })} className={input} />
-                <label className="flex items-center gap-1 text-[11px] font-bold"><input type="checkbox" checked={f.isActive} onChange={(e) => update({ [kind]: replace(c[kind], i, { ...f, isActive: e.target.checked }) })} className="accent-[#142b4a]" />{t('مفعل', 'Active')}</label>
+                <label className="flex items-center gap-1 text-xs font-bold"><input type="checkbox" checked={f.isActive} onChange={(e) => update({ [kind]: replace(c[kind], i, { ...f, isActive: e.target.checked }) })} className="accent-[#142b4a]" />{t('مفعل', 'Active')}</label>
                 {remove(() => update({ [kind]: c[kind].filter((_, j) => j !== i) }))}
               </div>
             ))}
@@ -141,7 +142,7 @@ function AdminTailoringCatalogEditor({ data, reload }: { data: TailoringCatalogC
                     <input value={f.key} dir="ltr" placeholder="key" onChange={(e) => setFields(replace(fields, i, { ...f, key: e.target.value.trim() }))} className={input} aria-label="key" />
                     <input value={f.nameAr} placeholder={t('بالعربي', 'Arabic')} onChange={(e) => setFields(replace(fields, i, { ...f, nameAr: e.target.value }))} className={input} />
                     <input value={f.nameEn} dir="ltr" placeholder="English" onChange={(e) => setFields(replace(fields, i, { ...f, nameEn: e.target.value }))} className={input} />
-                    <label className="flex items-center gap-1 text-[11px] font-bold"><input type="checkbox" checked={!!f.required} onChange={(e) => setFields(replace(fields, i, { ...f, required: e.target.checked }))} className="accent-[#142b4a]" />{t('إلزامي', 'Required')}</label>
+                    <label className="flex items-center gap-1 text-xs font-bold"><input type="checkbox" checked={!!f.required} onChange={(e) => setFields(replace(fields, i, { ...f, required: e.target.checked }))} className="accent-[#142b4a]" />{t('إلزامي', 'Required')}</label>
                     {remove(() => setFields(fields.filter((_, j) => j !== i)))}
                   </div>
                 ))}
@@ -235,19 +236,19 @@ function AddItemForm({ kind, catalog, onAdd }: { kind: AddKind; catalog: Tailori
       {kind === 'styles' && (
         <>
           <FormField label={t('القطعة', 'Garment')}>
-            <select value={garment} onChange={(e) => setGarment(e.target.value)} className={ui.input}>
+            <Select value={garment} onChange={(e) => setGarment(e.target.value)} className={ui.input}>
               {catalog.garments.map((g) => <option key={g.key} value={g.key}>{g.nameEn || g.key}</option>)}
-            </select>
+            </Select>
           </FormField>
           <FormField label={t('القماش الافتراضي', 'Default fabric')}>
-            <select value={fabric} onChange={(e) => setFabric(e.target.value)} className={ui.input}>
+            <Select value={fabric} onChange={(e) => setFabric(e.target.value)} className={ui.input}>
               {catalog.fabrics.map((f) => <option key={f.key} value={f.key}>{f.nameEn || f.key}</option>)}
-            </select>
+            </Select>
           </FormField>
           <FormField label={t('القصّة الافتراضية', 'Default fit')}>
-            <select value={fit} onChange={(e) => setFit(e.target.value)} className={ui.input}>
+            <Select value={fit} onChange={(e) => setFit(e.target.value)} className={ui.input}>
               {catalog.fits.map((f) => <option key={f.key} value={f.key}>{f.nameEn || f.key}</option>)}
-            </select>
+            </Select>
           </FormField>
           <FormField label={t('رابط صورة (اختياري)', 'Image link (optional)')} className="sm:col-span-2">
             <input type="url" dir="ltr" placeholder="https://…" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className={ui.input} />

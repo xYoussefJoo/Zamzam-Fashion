@@ -43,7 +43,7 @@ export default function Footer() {
               />
               <div>
                 <b className="text-xl font-bold tracking-tight block">Zamzam Fashion</b>
-                <small className="text-[10px] tracking-widest text-[#b99664] font-semibold uppercase">
+                <small className="text-[14px] tracking-widest text-[#b99664] font-semibold uppercase">
                   MADE FOR YOUR STYLE
                 </small>
               </div>

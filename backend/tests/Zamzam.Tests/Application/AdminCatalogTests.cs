@@ -64,7 +64,7 @@ public class AdminProductTests
 {
     private static CreateProductCommand NewAbaya(int categoryId, int colorId, string? sku = null) =>
         new(categoryId, "عباية", "Modest Abaya", null, null, null, 1250, true,
-            [new NewVariant("M", colorId, 4, Sku: sku), new NewVariant("L", colorId, 2, 1300)]);
+            [new NewVariant("M", colorId, Sku: sku), new NewVariant("L", colorId, 1300)]);
 
     [Fact]
     public async Task Create_makes_the_product_and_its_variants_with_default_skus()
@@ -120,19 +120,18 @@ public class AdminProductTests
     }
 
     [Fact]
-    public async Task A_product_that_was_ordered_is_soft_deleted()
+    public async Task A_product_that_was_ordered_cannot_be_deleted()
     {
         using var t = TestDb.WithCatalog();
         var ordered = t.AddProduct(t.Abayas, "Modest Abaya", 1250, ("M", t.Beige, 2));
         t.OrderVariant(ordered.Variants.Single());
         var handler = new DeleteProductHandler(t.Db, t.Storage, Log.For<DeleteProductHandler>());
 
-        await handler.HandleAsync(ordered.Id, CancellationToken.None);
+        var error = await Assert.ThrowsAsync<DomainException>(() => handler.HandleAsync(ordered.Id, CancellationToken.None));
 
+        Assert.Equal(ErrorCodes.HasOrders, error.Code);
         t.Reload();
-        var kept = await t.Db.Products.SingleAsync(p => p.Id == ordered.Id);
-        Assert.True(kept.IsDeleted);
-        await Assert.ThrowsAsync<NotFoundException>(() => new GetAdminProductHandler(t.Db, t.Storage).HandleAsync(ordered.Id, CancellationToken.None));
+        Assert.False((await t.Db.Products.SingleAsync(p => p.Id == ordered.Id)).IsDeleted);
     }
 
     [Fact]
@@ -162,11 +161,11 @@ public class AdminVariantTests
         var product = t.AddProduct(t.Abayas, "Modest Abaya", 1250, ("M", t.Beige, 2));
         var handler = new AddVariantHandler(t.Db);
 
-        var added = await handler.HandleAsync(product.Id, new NewVariant("L", t.Navy.Id, 5), CancellationToken.None);
+        var added = await handler.HandleAsync(product.Id, new NewVariant("L", t.Navy.Id), CancellationToken.None);
 
         Assert.Equal($"ZF-{product.Id}-L-NAVY", added.Sku);
         Assert.Equal(ErrorCodes.Duplicate, (await Assert.ThrowsAsync<DomainException>(() =>
-            handler.HandleAsync(product.Id, new NewVariant("l", t.Navy.Id, 1), CancellationToken.None))).Code);
+            handler.HandleAsync(product.Id, new NewVariant("l", t.Navy.Id), CancellationToken.None))).Code);
     }
 
     [Fact]
@@ -177,20 +176,20 @@ public class AdminVariantTests
         var variant = product.Variants.Single();
 
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => new UpdateVariantHandler(t.Db).HandleAsync(variant.Id,
-            new UpdateVariantCommand("M", t.Beige.Id, 9, null, Version: variant.Version + 1), CancellationToken.None));
+            new UpdateVariantCommand("M", t.Beige.Id, null, Version: variant.Version + 1), CancellationToken.None));
     }
 
     [Fact]
-    public async Task Update_with_the_current_version_changes_stock_and_price()
+    public async Task Update_with_the_current_version_changes_the_price_but_never_the_stock()
     {
         using var t = TestDb.WithCatalog();
         var product = t.AddProduct(t.Abayas, "Modest Abaya", 1250, ("M", t.Beige, 2));
         var variant = product.Variants.Single();
 
         var updated = await new UpdateVariantHandler(t.Db).HandleAsync(variant.Id,
-            new UpdateVariantCommand("M", t.Beige.Id, 9, 1300, variant.Version), CancellationToken.None);
+            new UpdateVariantCommand("M", t.Beige.Id, 1300, variant.Version), CancellationToken.None);
 
-        Assert.Equal((9, 1300m), (updated.Stock, updated.Price));
+        Assert.Equal((2, 1300m), (updated.Stock, updated.Price));
     }
 
     [Fact]

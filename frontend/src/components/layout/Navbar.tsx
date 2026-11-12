@@ -67,7 +67,7 @@ export default function Navbar() {
             <b className="text-lg sm:text-xl font-bold tracking-tight text-[#142b4a] group-hover:text-[#b99664] transition-colors duration-200">
               Zamzam Fashion
             </b>
-            <small className="text-[9px] sm:text-[10px] tracking-widest text-[#8a6d43] font-semibold uppercase">
+            <small className="text-[14px] sm:text-[14px] tracking-widest text-[#8a6d43] font-semibold uppercase">
               MADE FOR YOUR STYLE
             </small>
           </div>
@@ -118,7 +118,7 @@ export default function Navbar() {
             <span className="text-[#b99664] text-m"><FaShoppingCart /></span>
             <span>{t('السلة', 'Cart')}</span>
             {cartCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-[#b99664] text-white text-[10px] font-bold flex items-center justify-center animate-pulse-gold">
+              <span className="w-5 h-5 rounded-full bg-[#b99664] text-white text-[14px] font-bold flex items-center justify-center animate-pulse-gold">
                 {cartCount}
               </span>
             )}

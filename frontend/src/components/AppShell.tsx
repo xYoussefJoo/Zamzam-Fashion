@@ -56,8 +56,9 @@ export default function AppShell({ route }: { route?: InitialRoute }) {
 
   return (
     <div id="app">
-      <TopBanner />
-      <Navbar />
+      {/* The dashboard is its own page: no shop banner or menu, only its sidebar. */}
+      {page !== 'admin' && <TopBanner />}
+      {page !== 'admin' && <Navbar />}
 
       <main>
         {page === 'home' && <HomeView />}

@@ -58,7 +58,7 @@ export default function AdminPassword() {
       <label className="flex flex-col gap-1.5 text-xs font-bold text-[#2d3540]">
         <span>{t('أعيدي كتابة كلمة المرور الجديدة', 'Repeat the new password')}</span>
         <input type="password" required minLength={10} autoComplete="new-password" dir="ltr" value={repeat} onChange={(e) => setRepeat(e.target.value)} className={input} />
-        {mismatch && <small className="text-[11px] text-[#a72f3e]">{t('غير متطابقة', "Doesn't match")}</small>}
+        {mismatch && <small className="text-xs text-[#a72f3e]">{t('غير متطابقة', "Doesn't match")}</small>}
       </label>
       {error ? <p role="alert" className="text-xs font-bold text-[#a72f3e]">{message()}</p> : null}
       <button type="submit" disabled={busy || mismatch} className="px-6 py-3 rounded-lg bg-[#142b4a] hover:bg-[#1e3a61] disabled:opacity-60 text-white text-xs font-bold cursor-pointer">

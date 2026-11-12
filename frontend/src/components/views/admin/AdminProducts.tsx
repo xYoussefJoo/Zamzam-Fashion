@@ -3,17 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
 import { useApi, usePage } from '@/lib/useApi';
-import { errorText } from '@/lib/api';
-import { deleteProduct, getAdminCategories, getAdminProduct, getAdminProducts, updateProduct, type AdminProductRow } from '@/lib/admin';
+import { ApiError, errorText } from '@/lib/api';
+import { deleteProduct, getAdminCategories, getColors, getInventory, getAdminProduct, getAdminProducts, updateProduct, type AdminProductRow } from '@/lib/admin';
 import { pick } from '@/lib/shop';
-import { Button, PageHeader, useConfirm } from '@/components/admin/ui';
+import { Button, Field, PageHeader, ui, useConfirm } from '@/components/admin/ui';
+import Select from '@/components/ui/Select';
 
 // #21, #24 (show/hide), #25 — the product table.
 export default function AdminProducts() {
   const lang = useZamzamStore((state) => state.lang);
   const adminProductFilter = useZamzamStore((state) => state.adminProductFilter);
   const setAdminProductFilter = useZamzamStore((state) => state.setAdminProductFilter);
-  const openProductEditor = useZamzamStore((state) => state.openProductEditor);
+  const setAdminTab = useZamzamStore((state) => state.setAdminTab);
   const editProduct = useZamzamStore((state) => state.editProduct);
   const catalogVersion = useZamzamStore((state) => state.catalogVersion); // the pop-up closed: reload
   const confirm = useConfirm();
@@ -23,23 +24,29 @@ export default function AdminProducts() {
 
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
-  const [lowStock, setLowStock] = useState(false);
+  const [colorId, setColorId] = useState('all');
+  const [size, setSize] = useState('all');
+  const [status, setStatus] = useState<'all' | 'low' | 'out' | 'in'>('all');
   useEffect(() => {
-    const timer = setTimeout(() => setQ(search.trim().length >= 2 ? search.trim() : ''), 400);
+    const timer = setTimeout(() => setQ(search.trim()), 300);
     return () => clearTimeout(timer);
   }, [search]);
-  const [page, setPage] = usePage(`${adminProductFilter}|${q}|${lowStock}`);
+  const [page, setPage] = usePage(`${adminProductFilter}|${q}|${colorId}|${size}|${status}`);
 
   const categories = useApi(getAdminCategories, []);
+  const colors = useApi(getColors, []);
+  const sizes = useApi(() => getInventory({ pageSize: 1 }), []); // only for the list of sizes in use
   const { data, error, loading, reload } = useApi(
     () => getAdminProducts({
       categoryId: adminProductFilter === 'all' ? undefined : Number(adminProductFilter),
       q: q || undefined,
-      lowStock: lowStock || undefined,
+      colorId: colorId === 'all' ? undefined : Number(colorId),
+      size: size === 'all' ? undefined : size,
+      status: status === 'all' ? undefined : status,
       page,
       pageSize: 20,
     }),
-    [adminProductFilter, q, lowStock, page, catalogVersion],
+    [adminProductFilter, q, colorId, size, status, page, catalogVersion],
   );
 
   const startEdit = (id: number) => editProduct(id);
@@ -54,14 +61,16 @@ export default function AdminProducts() {
       showToast(p.isVisible ? t('تم إخفاء المنتج من المتجر', 'Product hidden from the shop') : t('المنتج ظاهر في المتجر', 'Product shown in the shop'), 'success');
       reload();
     } catch (err) {
-      showToast(errorText(err, t), 'error');
+      showToast(err instanceof ApiError && err.code === 'HAS_ORDERS'
+        ? t('هذا المنتج له طلبات ولا يمكن حذفه. أخفيه بدلًا من ذلك.', "This product has orders and can't be deleted. Hide it instead.")
+        : errorText(err, t), 'error');
     }
   };
 
   const remove = async (row: AdminProductRow) => {
     if (!(await confirm({
       title: t(`حذف "${row.nameAr}"؟`, `Delete "${row.nameEn}"?`),
-      message: t('إذا طُلب هذا المنتج من قبل، يُخفى ويبقى في الطلبات القديمة.', 'If it was ever ordered, it is hidden and kept in old orders.'),
+      message: t('سيُحذف المنتج وكل صوره نهائيًا. المنتج الذي له طلبات لا يمكن حذفه؛ يمكنكِ إخفاؤه.', "The product and all its photos are deleted for good. A product with orders can't be deleted; you can hide it."),
       confirmLabel: t('حذف', 'Delete'), danger: true,
     }))) return;
     try {
@@ -80,31 +89,51 @@ export default function AdminProducts() {
       <PageHeader
         eyebrow="PRODUCTS"
         title={t('المنتجات والموديلات', 'Products & styles')}
-        description={t('كل قسم ممكن يحتوي على موديلات كتير. اضغطي “منتج جديد” لتفتح نافذة الإضافة.', 'Each category can hold many styles. Press “New product” to open the add window.')}
-        action={<Button onClick={() => openProductEditor()}>＋ {t('منتج جديد', 'New product')}</Button>}
+        description={t('قائمة المنتجات والبحث فيها. لإضافة منتج جديد أو تغيير الكميات افتحي “المخزن”.', 'List and search your products. To add a new product or change stock, open “Warehouse”.')}
+        action={<Button variant="secondary" onClick={() => setAdminTab('warehouse')}>{t('المخزن', 'Warehouse')} ↗</Button>}
       />
 
-      <div className="flex flex-wrap items-end gap-4">
-        <label className="flex flex-col gap-1.5 text-xs font-bold text-[#2d3540] w-full sm:w-56">
-          <span>{t('تصفية حسب القسم', 'Filter by category')}</span>
-          <select value={adminProductFilter} onChange={(e) => setAdminProductFilter(e.target.value)}
-            className="border border-[#dedbd5] rounded-xl p-2.5 bg-white text-[#263548] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#b99664]">
-            <option value="all">{t('كل الأقسام', 'All categories')}</option>
-            {allCategories.map((c) => (
-              <option key={c.id} value={c.id}>{c.parentId ? '↳ ' : ''}{pick(lang, c.nameAr, c.nameEn)}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5 text-xs font-bold text-[#2d3540] w-full sm:w-56">
-          <span>{t('بحث بالاسم أو SKU', 'Search name or SKU')}</span>
-          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="border border-[#dedbd5] rounded-xl p-2.5 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-[#b99664]" />
-        </label>
-        <label className="flex items-center gap-2 text-xs font-bold text-[#2d3540] cursor-pointer pb-2.5">
-          <input type="checkbox" checked={lowStock} onChange={(e) => setLowStock(e.target.checked)} className="accent-[#142b4a] w-4 h-4" />
-          <span>{t('مخزون منخفض فقط', 'Low stock only')}</span>
-        </label>
-      </div>
+      {/* Every filter runs on the server and combines with AND; colour, size and status match the same size/colour. */}
+      <section className={`${ui.card} p-4 sm:p-5 space-y-4`}>
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t('حالة المخزون', 'Stock status')}>
+          {([['all', 'الكل', 'All'], ['low', 'منخفض', 'Low'], ['out', 'نفد', 'Sold out'], ['in', 'متوفر', 'In stock']] as const).map(([key, ar, en]) => (
+            <button key={key} type="button" aria-pressed={status === key} onClick={() => setStatus(key)}
+              className={`px-4 py-2 rounded-full text-sm font-bold border transition-colors cursor-pointer ${status === key ? 'bg-[#142b4a] text-white border-[#142b4a]' : 'bg-white text-[#142b4a] border-[#dedbd5] hover:border-[#b99664]'}`}>
+              {t(ar, en)}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+          <Field label={t('ابحثي بالاسم أو SKU', 'Search name or SKU')} className="sm:col-span-2">
+            <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} maxLength={100} placeholder={t('مثال: عباية أو ZF-1-M', 'e.g. abaya or ZF-1-M')} className={ui.input} />
+          </Field>
+          <Field label={t('القسم', 'Category')}>
+            <Select value={adminProductFilter} onChange={(e) => setAdminProductFilter(e.target.value)} className={ui.input} aria-label={t('القسم', 'Category')}>
+              <option value="all">{t('كل الأقسام', 'All categories')}</option>
+              {allCategories.map((c) => <option key={c.id} value={String(c.id)}>{pick(lang, c.nameAr, c.nameEn)}</option>)}
+            </Select>
+          </Field>
+          <Field label={t('اللون', 'Colour')}>
+            <Select value={colorId} onChange={(e) => setColorId(e.target.value)} className={ui.input} aria-label={t('اللون', 'Colour')}>
+              <option value="all">{t('كل الألوان', 'All colours')}</option>
+              {(colors.data ?? []).map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full border border-black/10 inline-block" style={{ backgroundColor: c.hex }} aria-hidden="true" />
+                    {pick(lang, c.nameAr, c.nameEn)}
+                  </span>
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t('المقاس', 'Size')}>
+            <Select value={size} onChange={(e) => setSize(e.target.value)} className={ui.input} aria-label={t('المقاس', 'Size')}>
+              <option value="all">{t('كل المقاسات', 'All sizes')}</option>
+              {(sizes.data?.sizes ?? []).map((sz) => <option key={sz} value={sz}>{sz}</option>)}
+            </Select>
+          </Field>
+        </div>
+      </section>
 
       {error ? (
         <div className="space-y-2">
@@ -130,14 +159,13 @@ export default function AdminProducts() {
                   <div className="min-w-0">
                     <b className="block text-sm font-bold text-[#142b4a] truncate">
                       {pick(lang, p.nameAr, p.nameEn)}
-                      {!p.isVisible && <span className="ms-2 text-[10px] px-2 py-0.5 rounded-full bg-[#f1ece4] text-[#77808a] align-middle">{t('مخفي', 'Hidden')}</span>}
+                      {!p.isVisible && <span className="ms-2 text-[14px] px-2 py-0.5 rounded-full bg-[#f1ece4] text-[#77808a] align-middle">{t('مخفي', 'Hidden')}</span>}
                     </b>
                     <small className="block text-xs text-[#858b91] mt-0.5">
                       {pick(lang, p.categoryNameAr, p.categoryNameEn)} · <strong className="text-[#a27b4e]">{money(p.basePrice)}</strong>
                     </small>
-                    <small className={`block text-[11px] mt-0.5 ${p.lowStock ? 'text-[#a72f3e] font-bold' : 'text-[#858b91]'}`}>
-                      {t('المخزون', 'Stock')}: {p.totalStock} · {p.variantCount} {t('مقاس/لون', 'variants')}
-                      {p.lowStock ? ` · ${t('منخفض', 'low')}` : ''}
+                    <small className={`block text-xs mt-0.5 ${p.lowVariants > 0 ? 'text-[#a72f3e] font-bold' : 'text-[#858b91]'}`}>
+                      {t(`${p.totalStock} في المخزن · ${p.lowVariants} من ${p.variantCount} مقاس/لون منخفض`, `${p.totalStock} in stock · ${p.lowVariants} of ${p.variantCount} variants low`)}
                     </small>
                   </div>
                 </div>

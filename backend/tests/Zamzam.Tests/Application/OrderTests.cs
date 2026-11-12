@@ -21,6 +21,8 @@ public class PlaceOrderTests
         Assert.Equal(OrderStatus.PendingConfirmation, placed.Status);
         Assert.Equal((2500m, 65m, 2565m), (placed.Subtotal, placed.DeliveryFee, placed.Total));
         Assert.Equal(1, k.Stock(abaya.Id));
+        var sold = k.T.Db.StockMovements.Single();                                  // the stock history says why
+        Assert.Equal((-2, StockReason.Sold, "ZF-10001", (string?)null), (sold.Change, sold.Reason, sold.Note, sold.CreatedBy));
 
         var saved = k.T.Db.Orders.Single();
         Assert.NotEqual(placed.TrackingToken, saved.TrackingTokenHash);              // only the hash is stored

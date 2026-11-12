@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zamzam.Api.Security;
@@ -70,7 +71,7 @@ public sealed class AdminProductsController : ApiControllerBase
     public Task<AdminProductDetail> Update(int id, UpdateProductCommand command, [FromServices] UpdateProductHandler handler, CancellationToken ct) =>
         handler.HandleAsync(id, command, ct);
 
-    // #25 — soft delete when the product was ever ordered
+    // #25 — 409 HAS_ORDERS when the product was ever ordered (hide it instead); otherwise deleted with its photos
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, [FromServices] DeleteProductHandler handler, CancellationToken ct)
@@ -106,6 +107,21 @@ public sealed class AdminProductsController : ApiControllerBase
 [Authorize(Policy = Policies.Owner)]
 public sealed class AdminVariantsController : ApiControllerBase
 {
+    // Inventory tab: every size/colour with its stock (filter by status low|out|in, search, category).
+    [HttpGet("/api/admin/inventory")]
+    public Task<InventoryDto> Inventory([FromQuery] InventoryQuery query, [FromServices] ListInventoryHandler handler, CancellationToken ct) =>
+        handler.HandleAsync(query, ct);
+
+    // Warehouse: change stock with a reason (Received / Returned / Damaged / Correction). 409 NEGATIVE_STOCK below 0.
+    [HttpPost("{id:int}/stock")]
+    public Task<AdminVariantDto> AdjustStock(int id, AdjustStockCommand command, [FromServices] AdjustStockHandler handler, CancellationToken ct) =>
+        handler.HandleAsync(id, command, User.FindFirstValue(ClaimTypes.NameIdentifier), ct);
+
+    // Warehouse: the variant's stock history, newest first.
+    [HttpGet("{id:int}/movements")]
+    public Task<IReadOnlyList<StockMovementDto>> Movements(int id, [FromServices] ListStockMovementsHandler handler, CancellationToken ct) =>
+        handler.HandleAsync(id, ct);
+
     // #27 — send the "version" you loaded; 409 CONCURRENCY_CONFLICT if it changed meanwhile
     [HttpPut("{id:int}")]
     public Task<AdminVariantDto> Update(int id, UpdateVariantCommand command, [FromServices] UpdateVariantHandler handler, CancellationToken ct) =>

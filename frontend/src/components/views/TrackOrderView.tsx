@@ -4,13 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { useZamzamStore } from '@/store/useZamzamStore';
 import { useApi } from '@/lib/useApi';
 import { ApiError, errorText } from '@/lib/api';
+import TrackLookup from '@/components/views/TrackLookup';
 import { approveQuote, pick, rejectQuote, rememberOrder, statusLabel, trackOrder, type PublicOrder } from '@/lib/shop';
 
 // /track/[number]?t=… — the page every order and quote email links to. The token is the key; no login.
 export default function TrackOrderView() {
   const tracking = useZamzamStore((state) => state.tracking);
   const t = useZamzamStore((state) => state.t);
-  const go = useZamzamStore((state) => state.go);
   const number = tracking?.number ?? '';
   const token = tracking?.token ?? '';
   const { data, error, loading, reload } = useApi(() => trackOrder(number, token), [number, token], !!number && !!token);
@@ -28,9 +28,7 @@ export default function TrackOrderView() {
         <p className="text-sm text-[#77808b]">
           {t('تأكدي من استخدام الرابط كما وصلكِ في الرسالة بالكامل.', 'Check that you opened the full link from your message.')}
         </p>
-        <button type="button" onClick={() => go('orders')} className="px-7 py-3 rounded-full bg-[#142b4a] hover:bg-[#b99664] text-white text-sm font-bold cursor-pointer">
-          {t('طلباتي', 'My orders')}
-        </button>
+        <div className="text-start pt-4"><TrackLookup /></div>
       </div>
     );
   }
@@ -59,7 +57,9 @@ export default function TrackOrderView() {
   return <OrderDetails order={data} token={token} onChanged={reload} />;
 }
 
-function OrderDetails({ order, token, onChanged }: { order: PublicOrder; token: string; onChanged: () => void }) {
+// token is empty when the order was found by number + phone/email: the customer sees everything,
+// but answering a price quote still needs the private link from the message.
+export function OrderDetails({ order, token, onChanged }: { order: PublicOrder; token: string; onChanged: () => void }) {
   const lang = useZamzamStore((state) => state.lang);
   const t = useZamzamStore((state) => state.t);
   const money = useZamzamStore((state) => state.money);
@@ -125,7 +125,9 @@ function OrderDetails({ order, token, onChanged }: { order: PublicOrder; token: 
             <p className="text-xs text-[#77808b]">{t(`العرض صالح حتى ${date(tailoring.quoteValidUntil)}`, `Valid until ${date(tailoring.quoteValidUntil)}`)}</p>
           )}
 
-          {declining ? (
+          {!token ? (
+            <p className="text-sm font-bold text-[#8a6d43]">{t('للموافقة على السعر أو رفضه افتحي الرابط الذي وصلكِ في الرسالة.', 'To accept or decline this price, open the link from your message.')}</p>
+          ) : declining ? (
             <div className="space-y-3">
               <label className="flex flex-col gap-1.5 text-xs font-bold text-[#2d3540]">
                 <span>{t('سبب الرفض (اختياري)', 'Reason (optional)')}</span>

@@ -11,11 +11,13 @@ import {
 import { adminSizes } from '@/lib/labels';
 import { pick } from '@/lib/shop';
 import { Button, ui, useConfirm, useModalDirty } from '@/components/admin/ui';
+import Select from '@/components/ui/Select';
 
 const MAX_PHOTO = 5 * 1024 * 1024;
 const MAX_IMAGES = 10;
 
-// #22–#30 — the product pop-up: details, its size × color variants (stock and price each), and its photos.
+// #22–#30 — the product pop-up: details, its size × color variants (price each) and its photos.
+// Stock is owned by the Warehouse tab: here it is shown read-only, and new variants start at 0.
 // A new product saves its details first; the same pop-up then continues with stock and photos.
 export default function AdminProductEditor() {
   const editingProductId = useZamzamStore((state) => state.productModal?.id ?? null);
@@ -65,7 +67,6 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
   // New products only: the first variants, every ticked size × every ticked color.
   const [sizes, setSizes] = useState<string[]>(['S', 'M', 'L']);
   const [colorIds, setColorIds] = useState<number[]>([]);
-  const [startStock, setStartStock] = useState('1');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
 
@@ -98,10 +99,9 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
         showToast(t('تم تحديث المنتج', 'Product updated'), 'success');
         onSaved();
       } else {
-        const stock = Math.max(0, Math.floor(Number(startStock) || 0));
         const created = await createProduct({
           ...body,
-          variants: sizes.flatMap((size) => colorIds.map((colorId) => ({ size, colorId, stock, priceOverride: null, sku: null }))),
+          variants: sizes.flatMap((size) => colorIds.map((colorId) => ({ size, colorId, priceOverride: null, sku: null }))),
         });
         showToast(t('تم إنشاء المنتج. أضيفي الصور الآن', 'Product created. Add its photos now'), 'success');
         setProductModalId(created.id); // the pop-up continues on the saved product: variants and photos
@@ -116,14 +116,14 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
   const input = ui.input;
   const msg = (f: string) => {
     const m = fieldError(error, f);
-    return m ? <small className="text-[11px] text-[#a72f3e]">{m}</small> : null;
+    return m ? <small className="text-xs text-[#a72f3e]">{m}</small> : null;
   };
 
   return (
     <section className={`${ui.card} p-5 sm:p-6 space-y-6`}>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <span className="text-[11px] font-bold tracking-widest text-[#9c7c54] uppercase">PRODUCT</span>
+          <span className="text-xs font-bold tracking-widest text-[#9c7c54] uppercase">PRODUCT</span>
           <h3 className="text-lg sm:text-xl font-serif font-bold text-[#142b4a] mt-0.5">
             {product ? t('تعديل بيانات المنتج', 'Edit product details') : t('منتج جديد', 'New product')}
           </h3>
@@ -133,12 +133,12 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
       <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <label className="flex flex-col gap-1.5 text-xs font-bold text-[#2d3540]">
           <span>{t('القسم', 'Category')} *</span>
-          <select required value={categoryId} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : '')} className={input}>
+          <Select required value={categoryId} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : '')} className={input}>
             <option value="">{t('اختاري القسم', 'Choose a category')}</option>
             {allCategories.map((c) => (
               <option key={c.id} value={c.id}>{c.parentId ? '↳ ' : ''}{pick(lang, c.nameAr, c.nameEn)}</option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="flex flex-col gap-1.5 text-xs font-bold text-[#2d3540]">
           <span>{t('السعر الأساسي (ج.م)', 'Base price (EGP)')} *</span>
@@ -197,10 +197,6 @@ function DetailsForm({ product, onSaved }: { product?: AdminProduct; onSaved: ()
               ))}
               {colors.data?.length === 0 && <small className="text-xs text-[#77808b]">{t('أضيفي ألوانًا من شاشة الألوان أولاً', 'Add colors in the Colors screen first')}</small>}
             </div>
-            <label className="flex flex-col gap-1.5 text-xs font-bold text-[#2d3540] w-48">
-              <span>{t('الكمية المبدئية لكل مقاس/لون', 'Starting stock per size/color')}</span>
-              <input type="number" min={0} value={startStock} onChange={(e) => setStartStock(e.target.value)} className={input} />
-            </label>
             <p className="text-xs font-bold text-[#142b4a]">{t(`سيتم إنشاء ${sizes.length * colorIds.length} مقاس/لون`, `${sizes.length * colorIds.length} variants will be created`)}</p>
           </div>
         )}
@@ -229,7 +225,6 @@ function Variants({ product, onChanged }: { product: AdminProduct; onChanged: ()
   const colors = useApi(getColors, []);
   const [newSize, setNewSize] = useState('M');
   const [newColor, setNewColor] = useState<number | ''>('');
-  const [newStock, setNewStock] = useState('1');
   const [newPrice, setNewPrice] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -238,7 +233,7 @@ function Variants({ product, onChanged }: { product: AdminProduct; onChanged: ()
     if (!newColor) return;
     setBusy(true);
     try {
-      await addVariant(product.id, { size: newSize, colorId: Number(newColor), stock: Math.max(0, Math.floor(Number(newStock) || 0)), priceOverride: newPrice ? Number(newPrice) : null, sku: null });
+      await addVariant(product.id, { size: newSize, colorId: Number(newColor), priceOverride: newPrice ? Number(newPrice) : null, sku: null });
       showToast(t('تمت إضافة المقاس/اللون', 'Variant added'), 'success');
       onChanged();
     } catch (err) {
@@ -251,10 +246,10 @@ function Variants({ product, onChanged }: { product: AdminProduct; onChanged: ()
   const select = 'border border-[#dedbd5] rounded-lg p-2 bg-white text-xs';
   return (
     <section className={`${ui.card} p-5 sm:p-6 space-y-4`}>
-      <h3 className="text-lg font-serif font-bold text-[#142b4a]">{t('المقاسات والألوان والمخزون', 'Sizes, colors & stock')}</h3>
+      <h3 className="text-lg font-serif font-bold text-[#142b4a]">{t('المقاسات والألوان', 'Sizes & colors')}</h3>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-[11px] text-[#77808b] uppercase border-b border-[#efe9df]">
+          <thead className="text-xs text-[#77808b] uppercase border-b border-[#efe9df]">
             <tr>
               <th className="py-2 text-start">{t('المقاس', 'Size')}</th>
               <th className="py-2 text-start">{t('اللون', 'Color')}</th>
@@ -272,22 +267,18 @@ function Variants({ product, onChanged }: { product: AdminProduct; onChanged: ()
       </div>
 
       <form onSubmit={add} className="flex flex-wrap items-end gap-3 pt-3 border-t border-[#efe9df]">
-        <label className="flex flex-col gap-1 text-[11px] font-bold text-[#2d3540]">
+        <label className="flex flex-col gap-1 text-xs font-bold text-[#2d3540]">
           <span>{t('المقاس', 'Size')}</span>
-          <select value={newSize} onChange={(e) => setNewSize(e.target.value)} className={select}>{adminSizes.map((s) => <option key={s}>{s}</option>)}</select>
+          <Select value={newSize} onChange={(e) => setNewSize(e.target.value)} className={select}>{adminSizes.map((s) => <option key={s}>{s}</option>)}</Select>
         </label>
-        <label className="flex flex-col gap-1 text-[11px] font-bold text-[#2d3540]">
+        <label className="flex flex-col gap-1 text-xs font-bold text-[#2d3540]">
           <span>{t('اللون', 'Color')}</span>
-          <select required value={newColor} onChange={(e) => setNewColor(e.target.value ? Number(e.target.value) : '')} className={select}>
+          <Select required value={newColor} onChange={(e) => setNewColor(e.target.value ? Number(e.target.value) : '')} className={select}>
             <option value="">—</option>
             {(colors.data ?? []).map((c) => <option key={c.id} value={c.id}>{pick(lang, c.nameAr, c.nameEn)}</option>)}
-          </select>
+          </Select>
         </label>
-        <label className="flex flex-col gap-1 text-[11px] font-bold text-[#2d3540] w-20">
-          <span>{t('المخزون', 'Stock')}</span>
-          <input type="number" min={0} value={newStock} onChange={(e) => setNewStock(e.target.value)} className={select} />
-        </label>
-        <label className="flex flex-col gap-1 text-[11px] font-bold text-[#2d3540] w-28">
+        <label className="flex flex-col gap-1 text-xs font-bold text-[#2d3540] w-28">
           <span>{t('سعر خاص (اختياري)', 'Own price (optional)')}</span>
           <input type="number" min={1} step="0.01" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} className={select} />
         </label>
@@ -302,16 +293,15 @@ function VariantRow({ variant, basePrice, onChanged }: { variant: AdminVariant; 
   const t = useZamzamStore((state) => state.t);
   const money = useZamzamStore((state) => state.money);
   const showToast = useZamzamStore((state) => state.showToast);
-  const [stock, setStock] = useState(String(variant.stock));
   const [price, setPrice] = useState(variant.priceOverride != null ? String(variant.priceOverride) : '');
   const [busy, setBusy] = useState(false);
-  const dirty = stock !== String(variant.stock) || price !== (variant.priceOverride != null ? String(variant.priceOverride) : '');
+  const dirty = price !== (variant.priceOverride != null ? String(variant.priceOverride) : '');
 
   const save = async () => {
     setBusy(true);
     try {
       // The version from when this row was loaded: if someone changed it since, the server says so.
-      await updateVariant(variant.id, { size: variant.size, colorId: variant.color.id, stock: Math.max(0, Math.floor(Number(stock) || 0)), priceOverride: price ? Number(price) : null, version: variant.version });
+      await updateVariant(variant.id, { size: variant.size, colorId: variant.color.id, priceOverride: price ? Number(price) : null, version: variant.version });
       showToast(t('تم الحفظ', 'Saved'), 'success');
       onChanged();
     } catch (err) {
@@ -343,12 +333,12 @@ function VariantRow({ variant, basePrice, onChanged }: { variant: AdminVariant; 
           {pick(lang, variant.color.nameAr, variant.color.nameEn)}
         </span>
       </td>
-      <td className="py-2 font-mono text-[11px] text-[#77808a]" dir="ltr">{variant.sku}</td>
-      <td className="py-2"><input type="number" min={0} value={stock} onChange={(e) => setStock(e.target.value)} className={`${cell} ${Number(stock) <= 3 ? 'text-[#a72f3e] font-bold' : ''}`} aria-label={t('المخزون', 'Stock')} /></td>
+      <td className="py-2 font-mono text-xs text-[#77808a]" dir="ltr">{variant.sku}</td>
+      <td className="py-2"><span className={`font-bold ${variant.stock <= 3 ? 'text-[#a72f3e]' : 'text-[#142b4a]'}`} title={t('تُعدَّل الكمية من المخزن', 'Stock is changed in the Warehouse')}>{variant.stock}</span></td>
       <td className="py-2"><input type="number" min={1} step="0.01" value={price} placeholder={money(basePrice)} onChange={(e) => setPrice(e.target.value)} className={`${cell} w-28`} aria-label={t('سعر خاص', 'Own price')} /></td>
       <td className="py-2 text-end whitespace-nowrap">
-        <button type="button" disabled={!dirty || busy} onClick={() => void save()} className="px-3 py-1 rounded-lg bg-[#142b4a] text-white text-[11px] font-bold disabled:opacity-30 cursor-pointer">{t('حفظ', 'Save')}</button>
-        <button type="button" onClick={() => void remove()} className="ms-1.5 px-3 py-1 rounded-lg border border-[#efc9c9] bg-[#fff7f7] text-[#a34c4c] text-[11px] font-bold cursor-pointer">{t('حذف', 'Delete')}</button>
+        <button type="button" disabled={!dirty || busy} onClick={() => void save()} className="px-3 py-1 rounded-lg bg-[#142b4a] text-white text-xs font-bold disabled:opacity-30 cursor-pointer">{t('حفظ', 'Save')}</button>
+        <button type="button" onClick={() => void remove()} className="ms-1.5 px-3 py-1 rounded-lg border border-[#efc9c9] bg-[#fff7f7] text-[#a34c4c] text-xs font-bold cursor-pointer">{t('حذف', 'Delete')}</button>
       </td>
     </tr>
   );
@@ -408,7 +398,7 @@ function Photos({ product, onChanged }: { product: AdminProduct; onChanged: () =
           <figure key={img.id} className="relative rounded-xl overflow-hidden border border-[#e8dfd1] bg-[#f7f3eb] aspect-[3/4]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={img.srcSet.split(', ')[0]?.split(' ')[0] || img.url} alt={pick(lang, img.altAr, img.altEn)} className="w-full h-full object-cover" />
-            {i === 0 && <span className="absolute top-1.5 start-1.5 px-2 py-0.5 rounded-full bg-[#b99664] text-white text-[10px] font-bold">{t('رئيسية', 'Main')}</span>}
+            {i === 0 && <span className="absolute top-1.5 start-1.5 px-2 py-0.5 rounded-full bg-[#b99664] text-white text-[14px] font-bold">{t('رئيسية', 'Main')}</span>}
             <button type="button" onClick={() => void remove(img.id)} aria-label={t('حذف الصورة', 'Delete photo')}
               className="absolute top-1.5 end-1.5 w-7 h-7 rounded-full bg-[#142b4a]/85 text-white text-xs hover:bg-red-700 cursor-pointer">✕</button>
           </figure>
@@ -418,11 +408,11 @@ function Photos({ product, onChanged }: { product: AdminProduct; onChanged: () =
 
       {!full && (
         <div className="flex flex-wrap items-end gap-3 pt-3 border-t border-[#efe9df]">
-          <label className="flex flex-col gap-1 text-[11px] font-bold text-[#2d3540]">
+          <label className="flex flex-col gap-1 text-xs font-bold text-[#2d3540]">
             <span>{t('وصف الصورة بالعربي (اختياري)', 'Arabic alt text (optional)')}</span>
             <input value={altAr} maxLength={150} onChange={(e) => setAltAr(e.target.value)} className="border border-[#dedbd5] rounded-lg p-2 text-xs" />
           </label>
-          <label className="flex flex-col gap-1 text-[11px] font-bold text-[#2d3540]">
+          <label className="flex flex-col gap-1 text-xs font-bold text-[#2d3540]">
             <span>{t('وصف الصورة بالإنجليزي (اختياري)', 'English alt text (optional)')}</span>
             <input value={altEn} maxLength={150} dir="ltr" onChange={(e) => setAltEn(e.target.value)} className="border border-[#dedbd5] rounded-lg p-2 text-xs" />
           </label>

@@ -10,6 +10,8 @@ public static class ErrorCodes
     public const string ConcurrencyConflict = "CONCURRENCY_CONFLICT";
     public const string Duplicate = "DUPLICATE";
     public const string InUse = "IN_USE";
+    public const string HasOrders = "HAS_ORDERS";
+    public const string NegativeStock = "NEGATIVE_STOCK";
     public const string QuoteExpired = "QUOTE_EXPIRED";
     public const string NotFound = "NOT_FOUND";
 }

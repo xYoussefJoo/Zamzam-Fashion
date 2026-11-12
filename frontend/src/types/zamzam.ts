@@ -8,6 +8,7 @@ export type AdminTab =
   | 'overview'
   | 'categories'
   | 'products'
+  | 'warehouse'
   | 'orders'
   | 'colors'
   | 'zones'
@@ -21,7 +22,7 @@ export type InitialRoute =
   | { page: 'home' }
   | { page: 'product'; slug: string }
   | { page: 'track'; number: string; token: string }
-  | { page: 'admin'; orderId?: number };
+  | { page: 'admin'; orderId?: number; tab?: AdminTab };
 
 // One line in the bag: a single variant (size + color) of a product, with what the bag needs to show it.
 export interface CartLine {
