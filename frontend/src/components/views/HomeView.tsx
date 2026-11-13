@@ -44,7 +44,7 @@ export default function HomeView() {
       <section className="relative grid grid-cols-1 lg:grid-cols-2 min-h-[560px] lg:min-h-[640px] bg-gradient-to-br from-[#f7f3eb] via-[#ede4d4] to-[#e2cfb3] overflow-hidden">
         {/* Copy Column */}
         <div className="relative z-10 p-8 sm:p-14 lg:p-20 flex flex-col items-start justify-center text-start">
-          <span className="text-xs text-[#b99664] font-bold tracking-[0.25em] uppercase reveal-init">
+          <span className="text-xs text-[#b99664] font-bold tracking-[0.12em] sm:tracking-[0.25em] uppercase reveal-init">
             ZAMZAM FASHION / THE NEW EDIT
           </span>
 
@@ -123,7 +123,7 @@ export default function HomeView() {
       <section className="max-w-[1240px] mx-auto px-4 sm:px-6 py-16 sm:py-24">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 reveal-init">
           <div>
-            <span className="text-xs text-[#b99664] font-bold tracking-[0.25em] uppercase">
+            <span className="text-xs text-[#b99664] font-bold tracking-[0.12em] sm:tracking-[0.25em] uppercase">
               CURATED FOR YOU
             </span>
             <h2 className="text-2xl sm:text-4xl font-serif font-bold text-[#142b4a] mt-1.5">
@@ -187,7 +187,7 @@ export default function HomeView() {
 
             <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div className="flex flex-col justify-center items-start text-start space-y-4 reveal-left delay-100">
-                <span className="text-xs text-[#b99664] font-bold tracking-[0.25em] uppercase">
+                <span className="text-xs text-[#b99664] font-bold tracking-[0.12em] sm:tracking-[0.25em] uppercase">
                   NEW ARRIVALS
                 </span>
                 <h2 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-bold text-white leading-tight">
@@ -244,7 +244,7 @@ export default function HomeView() {
       <section className="max-w-[1240px] mx-auto px-4 sm:px-6 py-12 pb-20">
         <div className="flex items-center justify-between gap-4 mb-10 reveal-init">
           <div>
-            <span className="text-xs text-[#b99664] font-bold tracking-[0.25em] uppercase">
+            <span className="text-xs text-[#b99664] font-bold tracking-[0.12em] sm:tracking-[0.25em] uppercase">
               THE EDIT
             </span>
             <h2 className="text-2xl sm:text-4xl font-serif font-bold text-[#142b4a] mt-1.5">

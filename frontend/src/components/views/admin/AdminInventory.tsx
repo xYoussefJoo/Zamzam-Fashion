@@ -102,7 +102,14 @@ export default function AdminInventory() {
         ) : data.rows.items.length === 0 ? (
           <EmptyState title={t('لا توجد مقاسات بهذا الفلتر', 'No variants match these filters')} />
         ) : (
-          <div className="overflow-x-auto -mx-1" aria-busy={loading}>
+          <>
+          {/* Phones: one card per size/colour, big touch targets. */}
+          <ul className="md:hidden space-y-3" aria-busy={loading}>
+            {data.rows.items.map((row) => (
+              <StockRow key={`${row.variantId}-${row.version}`} layout="card" row={row} lowAt={data.lowStockAtOrBelow} onSaved={reload} onHistory={() => setHistory(row)} />
+            ))}
+          </ul>
+          <div className="hidden md:block overflow-x-auto -mx-1" aria-busy={loading}>
             <table className="w-full min-w-[820px] text-sm">
               <thead>
                 <tr className="text-[#77808a] border-b border-[#efe9df]">
@@ -116,11 +123,12 @@ export default function AdminInventory() {
               </thead>
               <tbody>
                 {data.rows.items.map((row) => (
-                  <StockRow key={`${row.variantId}-${row.version}`} row={row} lowAt={data.lowStockAtOrBelow} onSaved={reload} onHistory={() => setHistory(row)} />
+                  <StockRow key={`${row.variantId}-${row.version}`} layout="row" row={row} lowAt={data.lowStockAtOrBelow} onSaved={reload} onHistory={() => setHistory(row)} />
                 ))}
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {data && data.rows.totalPages > 1 && (
@@ -148,7 +156,7 @@ export default function AdminInventory() {
 }
 
 // One variant: − / quantity / + then Save, which asks for a reason. Keyed by version, so it restarts after each save.
-function StockRow({ row, lowAt, onSaved, onHistory }: { row: InventoryRow; lowAt: number; onSaved: () => void; onHistory: () => void }) {
+function StockRow({ row, lowAt, onSaved, onHistory, layout }: { row: InventoryRow; lowAt: number; onSaved: () => void; onHistory: () => void; layout: 'row' | 'card' }) {
   const lang = useZamzamStore((state) => state.lang);
   const t = useZamzamStore((state) => state.t);
   const [stock, setStock] = useState(String(row.stock));
@@ -162,41 +170,78 @@ function StockRow({ row, lowAt, onSaved, onHistory }: { row: InventoryRow; lowAt
     : row.stock <= lowAt ? ['bg-[#fff7e7] text-[#8a6d43]', t('منخفض', 'Low')] : ['bg-emerald-50 text-emerald-800', t('متوفر', 'In stock')];
   const step = (d: number) => setStock(String(Math.max(0, (valid ? value : row.stock) + d)));
 
+
+  const product = (
+    <>
+      <b className="block text-[#142b4a]">{pick(lang, row.productNameAr, row.productNameEn)}</b>
+      <span className="text-xs text-[#77808a] font-mono" dir="ltr">{row.sku}</span>
+      {!row.productVisible && <span className="ms-2 text-xs px-2 py-0.5 rounded-full bg-[#f1ece4] text-[#666f7a]">{t('مخفي', 'Hidden')}</span>}
+    </>
+  );
+  const colour = (
+    <span className="inline-flex items-center gap-2">
+      <span className="w-5 h-5 rounded-full border border-black/10" style={{ backgroundColor: row.color.hex }} aria-hidden="true" />
+      {pick(lang, row.color.nameAr, row.color.nameEn)}
+    </span>
+  );
+  const status = <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${badge[0]}`}>{badge[1]}</span>;
+  const big = layout === 'card';
+  const stepper = (
+    <div className="flex items-center gap-1.5">
+      <button type="button" onClick={() => step(-1)} aria-label={t('إنقاص', 'Decrease')} className={`${big ? 'w-11 h-11 text-lg' : 'w-9 h-9'} rounded-lg border border-[#dedbd5] text-[#142b4a] font-bold cursor-pointer hover:border-[#b99664]`}>−</button>
+      <input
+        type="number" inputMode="numeric" min={0} max={100000} step={1} value={stock}
+        onChange={(e) => setStock(e.target.value)}
+        aria-label={t('الكمية', 'Stock')}
+        dir="ltr"
+        className={`${big ? 'w-full flex-1 h-11 text-lg' : 'w-20 h-9'} text-center rounded-lg border bg-white font-bold ${valid ? 'border-[#dedbd5]' : 'border-red-400'} focus:outline-none focus:ring-2 focus:ring-[#b99664]/50`}
+      />
+      <button type="button" onClick={() => step(1)} aria-label={t('زيادة', 'Increase')} className={`${big ? 'w-11 h-11 text-lg' : 'w-9 h-9'} rounded-lg border border-[#dedbd5] text-[#142b4a] font-bold cursor-pointer hover:border-[#b99664]`}>+</button>
+    </div>
+  );
+  const save = change !== 0 && (
+    <>
+      <Button size="sm" onClick={() => setConfirming(true)}>{t('حفظ', 'Save')}</Button>
+      <Button size="sm" variant="ghost" onClick={() => setStock(String(row.stock))}>{t('تراجع', 'Undo')}</Button>
+    </>
+  );
+  const reason = (
+    <Modal open={confirming} title={t('سبب تغيير الكمية', 'Reason for the change')} subtitle={`${row.sku} · ${row.stock} → ${valid ? value : row.stock}`} onClose={() => setConfirming(false)}>
+      {confirming && <ReasonForm row={row} change={change} onDone={() => { setConfirming(false); onSaved(); }} />}
+    </Modal>
+  );
+
+  if (big) {
+    return (
+      <li className="rounded-2xl border border-[#f3eee6] bg-white p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">{product}</div>
+          {status}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <span className="font-bold text-[#142b4a]" dir="ltr">{row.size}</span>
+          {colour}
+        </div>
+        {stepper}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-2">{save}</div>
+          <Button size="sm" variant="secondary" onClick={onHistory}>{t('السجل', 'History')}</Button>
+        </div>
+        {reason}
+      </li>
+    );
+  }
+
   return (
     <tr className="border-b border-[#f3eee6] last:border-0 hover:bg-[#fcfaf7]">
-      <td className="py-3 px-2">
-        <b className="block text-[#142b4a]">{pick(lang, row.productNameAr, row.productNameEn)}</b>
-        <span className="text-xs text-[#77808a] font-mono" dir="ltr">{row.sku}</span>
-        {!row.productVisible && <span className="ms-2 text-xs px-2 py-0.5 rounded-full bg-[#f1ece4] text-[#666f7a]">{t('مخفي', 'Hidden')}</span>}
-      </td>
+      <td className="py-3 px-2">{product}</td>
       <td className="py-3 px-2 font-bold text-[#142b4a]" dir="ltr">{row.size}</td>
-      <td className="py-3 px-2">
-        <span className="inline-flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full border border-black/10" style={{ backgroundColor: row.color.hex }} aria-hidden="true" />
-          {pick(lang, row.color.nameAr, row.color.nameEn)}
-        </span>
-      </td>
-      <td className="py-3 px-2"><span className={`px-3 py-1 rounded-full text-xs font-bold ${badge[0]}`}>{badge[1]}</span></td>
-      <td className="py-3 px-2">
-        <div className="flex items-center gap-1.5">
-          <button type="button" onClick={() => step(-1)} aria-label={t('إنقاص', 'Decrease')} className="w-9 h-9 rounded-lg border border-[#dedbd5] text-[#142b4a] font-bold cursor-pointer hover:border-[#b99664]">−</button>
-          <input
-            type="number" inputMode="numeric" min={0} max={100000} step={1} value={stock}
-            onChange={(e) => setStock(e.target.value)}
-            aria-label={t('الكمية', 'Stock')}
-            dir="ltr"
-            className={`w-20 h-9 text-center rounded-lg border bg-white font-bold ${valid ? 'border-[#dedbd5]' : 'border-red-400'} focus:outline-none focus:ring-2 focus:ring-[#b99664]/50`}
-          />
-          <button type="button" onClick={() => step(1)} aria-label={t('زيادة', 'Increase')} className="w-9 h-9 rounded-lg border border-[#dedbd5] text-[#142b4a] font-bold cursor-pointer hover:border-[#b99664]">+</button>
-          {change !== 0 && <Button size="sm" onClick={() => setConfirming(true)}>{t('حفظ', 'Save')}</Button>}
-          {change !== 0 && <Button size="sm" variant="ghost" onClick={() => setStock(String(row.stock))}>{t('تراجع', 'Undo')}</Button>}
-        </div>
-      </td>
+      <td className="py-3 px-2">{colour}</td>
+      <td className="py-3 px-2">{status}</td>
+      <td className="py-3 px-2"><div className="flex items-center gap-1.5">{stepper}{save}</div></td>
       <td className="py-3 px-2 text-end">
         <Button size="sm" variant="secondary" onClick={onHistory}>{t('السجل', 'History')}</Button>
-        <Modal open={confirming} title={t('سبب تغيير الكمية', 'Reason for the change')} subtitle={`${row.sku} · ${row.stock} → ${valid ? value : row.stock}`} onClose={() => setConfirming(false)}>
-          {confirming && <ReasonForm row={row} change={change} onDone={() => { setConfirming(false); onSaved(); }} />}
-        </Modal>
+        {reason}
       </td>
     </tr>
   );

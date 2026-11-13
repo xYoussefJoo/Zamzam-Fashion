@@ -104,26 +104,26 @@ export default function Footer() {
         </div>
 
         {/* Copyright & Powered By Bar */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/60">
+        <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-[13px] text-white/60 text-center">
           <span>{t('جميع الحقوق محفوظة © 2026 Kernel Panic', 'Copyright © 2026 Kernel Panic - All rights reserved.')}</span>
 
-          <div className="flex items-center gap-2">
-            <span className="text-white/50">{t('تصميم وتطوير بواسطة:', 'Powered by:')}</span>
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <span className="text-white/50 text-[13px]">{t('تصميم وتطوير بواسطة:', 'Powered by:')}</span>
             <a href="https://itkernelpanic.com/" target="_blank" rel="noopener noreferrer">
-              <div className={`flex  ${lang === 'ar' ? 'flex-row-reverse' : 'flex-row'} items-center gap-1.5 font-bold bg-white px-4 py-1 rounded-full`}>
+              <div className={`flex  ${lang === 'ar' ? 'flex-row-reverse' : 'flex-row'} items-center gap-1.5 font-bold bg-white px-3 py-1 rounded-full`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={assetPath('assets/kp-logo.png')}
                 loading="lazy"
                 alt="Kernel Panic"
-                className="w-12 h-12 object-contain rounded-xs"
+                className="w-8 h-8 object-contain rounded-xs"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
               <span className='flex flex-col'>
-              <span className='text-black font-bold text-lg'>KERNEL <span className='text-[#0062FF]'>PANIC</span></span>
-              <span className='text-gray-500 text-xs tracking-widest text-left w-full'>IT TEAM</span>
+              <span className='text-black font-bold text-sm leading-tight'>KERNEL <span className='text-[#0062FF]'>PANIC</span></span>
+              <span className='text-gray-500 text-[11px] tracking-widest text-left w-full leading-tight'>IT TEAM</span>
               </span>
             </div>
             </a>
