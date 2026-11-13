@@ -47,14 +47,14 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => handleNavClick('home')}
-          className="flex items-center gap-3 text-start group cursor-pointer focus:outline-none"
+          className="flex items-center gap-2 sm:gap-3 min-w-0 text-start group cursor-pointer focus:outline-none"
         >
           {!logoError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={assetPath('assets/logo-mark-160.webp')}
               alt="Zamzam Fashion"
-              className="w-13 h-13 sm:w-15 sm:h-15 object-contain transition-transform duration-300 group-hover:scale-105"
+              className="w-11 h-11 sm:w-15 sm:h-15 shrink-0 object-contain transition-transform duration-300 group-hover:scale-105"
               onError={() => setLogoError(true)}
             />
           ) : (
@@ -64,10 +64,10 @@ export default function Navbar() {
           )}
 
           <div className="flex flex-col">
-            <b className="text-lg sm:text-xl font-bold tracking-tight text-[#142b4a] group-hover:text-[#b99664] transition-colors duration-200">
+            <b className="text-[15px] sm:text-lg font-bold tracking-tight whitespace-nowrap leading-tight text-[#142b4a] group-hover:text-[#b99664] transition-colors duration-200">
               Zamzam Fashion
             </b>
-            <small className="text-[14px] sm:text-[14px] tracking-widest text-[#8a6d43] font-semibold uppercase">
+            <small className="hidden sm:block text-[11px] tracking-[0.18em] whitespace-nowrap leading-tight text-[#8a6d43] font-semibold uppercase">
               MADE FOR YOUR STYLE
             </small>
           </div>
@@ -113,10 +113,11 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => handleNavClick('cart')}
+            aria-label={t('السلة', 'Cart')}
             className="relative flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#142b4a] text-white hover:bg-[#1e3a61] font-bold text-xs sm:text-sm cursor-pointer shadow-sm transition-all duration-200 hover:shadow-md active:scale-[0.97]"
           >
             <span className="text-[#b99664] text-m"><FaShoppingCart /></span>
-            <span>{t('السلة', 'Cart')}</span>
+            <span className="hidden sm:inline">{t('السلة', 'Cart')}</span>
             {cartCount > 0 && (
               <span className="w-5 h-5 rounded-full bg-[#b99664] text-white text-[14px] font-bold flex items-center justify-center animate-pulse-gold">
                 {cartCount}
