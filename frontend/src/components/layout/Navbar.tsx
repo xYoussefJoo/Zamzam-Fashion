@@ -13,6 +13,7 @@ export default function Navbar() {
   const lang = useZamzamStore((state) => state.lang);
   const toggleLang = useZamzamStore((state) => state.toggleLang);
   const cartCount = useZamzamStore((state) => state.getCartCount());
+  const owner = useZamzamStore((state) => state.user); // set only while the owner's login cookie is valid
   const t = useZamzamStore((state) => state.t);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -102,6 +103,16 @@ export default function Navbar() {
 
         {/* Actions (Lang Switcher, Cart Button, Mobile Hamburger) */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {owner && (
+            <button
+              type="button"
+              onClick={() => handleNavClick('admin')}
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#cdbb9e] text-sm font-bold text-[#142b4a] hover:border-[#b99664] transition-all duration-200 cursor-pointer"
+            >
+              <span aria-hidden="true">▦</span>
+              {t('لوحة التحكم', 'Dashboard')}
+            </button>
+          )}
           <button
             type="button"
             onClick={toggleLang}
@@ -183,6 +194,15 @@ export default function Navbar() {
               </button>
             );
           })}
+          {owner && (
+            <button
+              type="button"
+              onClick={() => handleNavClick('admin')}
+              className="w-full text-start px-4 py-2.5 rounded-xl text-sm font-bold border border-[#cdbb9e] text-[#142b4a] cursor-pointer"
+            >
+              ▦ {t('لوحة التحكم', 'Dashboard')}
+            </button>
+          )}
         </div>
       </div>
     </header>
