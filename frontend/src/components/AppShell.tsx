@@ -30,11 +30,22 @@ export default function AppShell({ route }: { route?: InitialRoute }) {
   const setAdminTab = useZamzamStore((state) => state.setAdminTab);
   const go = useZamzamStore((state) => state.go);
   const initialize = useZamzamStore((state) => state.initialize);
+  const authChecked = useZamzamStore((state) => state.authChecked);
+  const checkSession = useZamzamStore((state) => state.checkSession);
 
   useEffect(() => {
     initialize(route);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialize]);
+
+  // Is the owner still logged in (cookie valid)? Then the header shows the Dashboard button.
+
+  useEffect(() => {
+
+    if (!authChecked) void checkSession();
+
+  }, [authChecked, checkSession]);
+
 
   useScrollReveal([page]);
 
